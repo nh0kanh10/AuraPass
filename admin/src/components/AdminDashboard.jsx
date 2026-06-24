@@ -474,6 +474,10 @@ export default function AdminDashboard({
   const [eventTheme, setEventTheme] = useState('dark');
   const [eventIsFeatured, setEventIsFeatured] = useState(false);
   const [eventIsTrending, setEventIsTrending] = useState(false);
+  const [eventEventType, setEventEventType] = useState('live');
+  const [eventOnlineLink, setEventOnlineLink] = useState('');
+  const [eventPlatform, setEventPlatform] = useState('');
+  const [eventOnlinePassword, setEventOnlinePassword] = useState('');
 
   const [eventZones, setEventZones] = useState([]);
   const [newZoneName, setNewZoneName] = useState('');
@@ -804,6 +808,10 @@ export default function AdminDashboard({
     setEventTheme(event.theme || 'dark');
     setEventIsFeatured(!!event.isFeatured);
     setEventIsTrending(!!event.isTrending);
+    setEventEventType(event.eventType || 'live');
+    setEventOnlineLink(event.onlineLink || '');
+    setEventPlatform(event.platform || '');
+    setEventOnlinePassword(event.onlinePassword || '');
   };
 
   const handleCreateNewEventClick = () => {
@@ -821,6 +829,10 @@ export default function AdminDashboard({
     setEventTheme('dark');
     setEventIsFeatured(true);
     setEventIsTrending(true);
+    setEventEventType('live');
+    setEventOnlineLink('');
+    setEventPlatform('');
+    setEventOnlinePassword('');
     setEventZones([
       { id: `zone-vip-${Date.now()}`, name: 'Khu VIP Lầu 1', price: 3000000, isStanding: false, availableTickets: 10, rows: 2, cols: 5 },
       { id: `zone-ga-${Date.now()}`, name: 'Khu Đứng GA', price: 500000, isStanding: true, availableTickets: 300, rows: null, cols: null }
@@ -848,7 +860,11 @@ export default function AdminDashboard({
       isFeatured: eventIsFeatured,
       isTrending: eventIsTrending,
       zones: eventZones,
-      creatorId: eventCreatorId || null
+      creatorId: eventCreatorId || null,
+      eventType: eventEventType,
+      onlineLink: eventEventType === 'online' ? eventOnlineLink : null,
+      platform: eventEventType === 'online' ? eventPlatform : null,
+      onlinePassword: eventEventType === 'online' ? eventOnlinePassword : null
     };
 
     setLoadingSaveEvent(true);
@@ -2766,6 +2782,49 @@ export default function AdminDashboard({
                       <span>Hiện ở Sự Kiện Xu Hướng (Trending)</span>
                     </label>
                   </div>
+
+                  {/* Event Type */}
+                  <div className="admin-form-group">
+                    <label className="admin-form-label">Loại Sự Kiện</label>
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                      {[{ val: 'live', label: '🎤 Trực tiếp' }, { val: 'online', label: '💻 Trực tuyến' }].map(opt => (
+                        <button
+                          key={opt.val}
+                          type="button"
+                          onClick={() => setEventEventType(opt.val)}
+                          style={{
+                            padding: '8px 18px', borderRadius: '8px', border: `1px solid ${eventEventType === opt.val ? '#a78bfa' : 'rgba(255,255,255,0.15)'}`,
+                            background: eventEventType === opt.val ? 'rgba(167,139,250,0.15)' : 'rgba(255,255,255,0.04)',
+                            color: eventEventType === opt.val ? '#a78bfa' : 'rgba(255,255,255,0.6)',
+                            fontSize: '13px', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s'
+                          }}
+                        >{opt.label}</button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {eventEventType === 'online' && (
+                    <div style={{ padding: '16px', borderRadius: '10px', border: '1px solid rgba(167,139,250,0.25)', background: 'rgba(167,139,250,0.05)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                      <div style={{ fontSize: '11px', color: '#a78bfa', fontWeight: 700, letterSpacing: '0.08em', marginBottom: '2px' }}>THÔNG TIN SỰ KIỆN TRỰC TUYẾN</div>
+                      <div className="form-grid-2">
+                        <div className="admin-form-group" style={{ margin: 0 }}>
+                          <label className="admin-form-label">Nền tảng</label>
+                          <input type="text" value={eventPlatform} onChange={e => setEventPlatform(e.target.value)} placeholder="Zoom, Google Meet, YouTube Live..." className="admin-form-input" />
+                        </div>
+                        <div className="admin-form-group" style={{ margin: 0 }}>
+                          <label className="admin-form-label">Mật khẩu phòng</label>
+                          <input type="text" value={eventOnlinePassword} onChange={e => setEventOnlinePassword(e.target.value)} placeholder="Tuỳ chọn" className="admin-form-input" />
+                        </div>
+                      </div>
+                      <div className="admin-form-group" style={{ margin: 0 }}>
+                        <label className="admin-form-label">Link tham gia *</label>
+                        <input type="text" value={eventOnlineLink} onChange={e => setEventOnlineLink(e.target.value)} placeholder="https://zoom.us/j/..." className="admin-form-input" />
+                      </div>
+                      <p style={{ margin: 0, fontSize: '11px', color: 'rgba(255,255,255,0.4)', lineHeight: 1.5 }}>
+                        🔒 Link bị ẩn công khai — chỉ hiển thị cho người mua sau khi thanh toán thành công.
+                      </p>
+                    </div>
+                  )}
 
                   <div className="admin-form-group">
                     <label className="admin-form-label">Ảnh Poster Sự Kiện *</label>

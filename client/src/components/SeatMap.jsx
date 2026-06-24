@@ -114,6 +114,117 @@ export default function SeatMap({ event, onBack, onProceedCheckout, showAlert })
     onProceedCheckout(ticketDetails);
   };
 
+  // ── Online event: no seat selection, simple quantity UI ──
+  if (event.eventType === 'online') {
+    const onlineCount = standingCount;
+    const onlineTotal = onlineCount * (selectedZone?.price || 0);
+    return (
+      <div style={{ padding: '36px 24px 48px', maxWidth: '640px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+        {/* Back */}
+        <button onClick={onBack} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: '13px', fontFamily: 'var(--font-mono)', padding: 0, alignSelf: 'flex-start' }}>
+          <ArrowLeft size={14} /> QUAY LẠI
+        </button>
+
+        {/* Event banner */}
+        <div className="glass-panel" style={{ overflow: 'hidden', padding: 0 }}>
+          {event.image && (
+            <div style={{ height: '180px', overflow: 'hidden', position: 'relative' }}>
+              <img src={event.image} alt={event.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, transparent 40%, rgba(0,0,0,0.75))' }} />
+              <span style={{
+                position: 'absolute', bottom: '12px', left: '16px',
+                fontSize: '10px', fontFamily: 'var(--font-mono)', fontWeight: 700, letterSpacing: '0.1em',
+                padding: '4px 10px', borderRadius: '4px',
+                background: 'var(--brand-cyan)', color: '#000'
+              }}>💻 SỰ KIỆN TRỰC TUYẾN</span>
+            </div>
+          )}
+          <div style={{ padding: '16px 20px 20px' }}>
+            <div style={{ fontSize: '17px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '4px' }}>{event.title}</div>
+            <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{event.date} {event.time && `· ${event.time}`}</div>
+          </div>
+        </div>
+
+        {/* Zone selection */}
+        {normalizedZones.length > 1 && (
+          <div>
+            <div style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', letterSpacing: '0.08em', marginBottom: '10px' }}>LOẠI VÉ</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {normalizedZones.map(zone => (
+                <button
+                  key={zone.id}
+                  onClick={() => setSelectedZone(zone)}
+                  style={{
+                    padding: '14px 16px', borderRadius: '10px', cursor: 'pointer', textAlign: 'left',
+                    border: `1px solid ${selectedZone?.id === zone.id ? 'var(--brand-cyan)' : 'rgba(255,255,255,0.1)'}`,
+                    background: selectedZone?.id === zone.id ? 'rgba(0,255,255,0.06)' : 'rgba(255,255,255,0.02)',
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center', transition: 'all 0.2s'
+                  }}
+                >
+                  <div>
+                    <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '2px' }}>{zone.name}</div>
+                    <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{zone.availableTickets} vé còn lại</div>
+                  </div>
+                  <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--brand-cyan)', fontFamily: 'var(--font-mono)' }}>
+                    {formatPrice(zone.price)}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Quantity + proceed */}
+        <div className="glass-panel" style={{ padding: '24px' }}>
+          <div style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', letterSpacing: '0.08em', marginBottom: '16px' }}>SỐ LƯỢNG VÉ</div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '20px' }}>
+            <button
+              onClick={handleStandingDecrement}
+              style={{ width: '36px', height: '36px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.04)', color: 'var(--text-primary)', fontSize: '18px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }}
+            >−</button>
+            <span style={{ fontSize: '24px', fontWeight: 700, fontFamily: 'var(--font-mono)', color: 'var(--text-primary)', minWidth: '32px', textAlign: 'center' }}>{onlineCount}</span>
+            <button
+              onClick={handleStandingIncrement}
+              style={{ width: '36px', height: '36px', borderRadius: '8px', border: '1px solid var(--brand-cyan)', background: 'rgba(0,255,255,0.08)', color: 'var(--brand-cyan)', fontSize: '18px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }}
+            >+</button>
+            <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>vé (tối đa 6)</span>
+          </div>
+
+          {/* Info box */}
+          <div style={{ padding: '12px 14px', borderRadius: '8px', background: 'rgba(0,255,255,0.05)', border: '1px solid rgba(0,255,255,0.15)', marginBottom: '20px', fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.6 }}>
+            <span style={{ color: 'var(--brand-cyan)', fontWeight: 600 }}>💡 Lưu ý:</span> Link tham gia sẽ được hiển thị trong mục <strong style={{ color: 'var(--text-primary)' }}>Vé của tôi</strong> ngay sau khi thanh toán thành công.
+          </div>
+
+          {/* Summary row */}
+          {onlineCount > 0 && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <span style={{ fontSize: '14px', color: 'var(--text-muted)' }}>{onlineCount} × {selectedZone?.name}</span>
+              <span style={{ fontSize: '18px', fontWeight: 700, color: 'var(--brand-cyan)', fontFamily: 'var(--font-mono)' }}>{formatPrice(onlineTotal)}</span>
+            </div>
+          )}
+
+          <button
+            onClick={() => {
+              if (onlineCount === 0) { showAlert('Vui lòng chọn ít nhất 1 vé'); return; }
+              onProceedCheckout({ event, zone: selectedZone, count: onlineCount, seats: [], totalPrice: onlineTotal });
+            }}
+            disabled={onlineCount === 0}
+            style={{
+              width: '100%', padding: '14px', borderRadius: '10px', border: 'none',
+              background: onlineCount > 0 ? 'linear-gradient(135deg, var(--brand-cyan), var(--brand-emerald))' : 'rgba(255,255,255,0.08)',
+              color: onlineCount > 0 ? '#000' : 'var(--text-muted)',
+              fontSize: '14px', fontWeight: 700, fontFamily: 'var(--font-mono)', letterSpacing: '0.06em',
+              cursor: onlineCount > 0 ? 'pointer' : 'default', transition: 'all 0.2s'
+            }}
+          >
+            TIẾN HÀNH THANH TOÁN →
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="seatmap-outer-wrapper" style={{ padding: '36px 24px 48px 24px', display: 'flex', flexDirection: 'column', gap: '24px', textAlign: 'left' }}>
 
