@@ -221,10 +221,11 @@ export const getTakenSeats = async (req, res) => {
   if (!zoneId) return res.status(400).json({ error: 'Thiếu zoneId' });
   try {
     const tickets = await Ticket.findAll({
-      where: { 
+      where: {
         zoneId,
         status: ['active', 'reselling']
       },
+      include: [{ model: Booking, as: 'booking', required: true, attributes: [] }],
       attributes: ['seatNumber']
     });
     const takenSeats = tickets
