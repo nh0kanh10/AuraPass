@@ -28,7 +28,13 @@ export const getEvents = async (req, res) => {
 
 export const getCreators = async (req, res) => {
   try {
+    const { userId } = req.query;
+    const where = {};
+    if (userId) {
+      where.userId = userId;
+    }
     const creators = await Creator.findAll({
+      where,
       include: [{ model: Event, as: 'events' }]
     });
     res.json(creators);

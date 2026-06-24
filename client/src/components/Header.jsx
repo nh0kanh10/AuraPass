@@ -98,6 +98,31 @@ export default function Header({
   const [loadingMyEvents, setLoadingMyEvents] = useState(false);
   const [editingEvent, setEditingEvent] = useState(null);
   const [viewingEvent, setViewingEvent] = useState(null);
+  const [myCreator, setMyCreator] = useState(null);
+
+  useEffect(() => {
+    const fetchMyCreator = async () => {
+      if (!currentUser || currentUser.role !== 'organizer') {
+        setMyCreator(null);
+        return;
+      }
+      try {
+        const res = await fetch(`http://localhost:5000/api/creators?userId=${currentUser.id}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.length > 0) {
+            setMyCreator(data[0]);
+          } else {
+            setMyCreator(null);
+          }
+        }
+      } catch (err) {
+        console.error("Lỗi khi lấy thông tin Creator liên kết:", err);
+      }
+    };
+
+    fetchMyCreator();
+  }, [currentUser]);
 
   const startEditEvent = (event) => {
     setEditingEvent(event);
@@ -211,6 +236,7 @@ export default function Header({
           theme: evtTheme,
           zones: evtZones,
           organizerId: currentUser ? currentUser.id : null,
+          creatorId: myCreator ? myCreator.id : (isEdit ? editingEvent.creatorId : null),
           status: isEdit ? editingEvent.status : 'pending'
         })
       });
@@ -1949,6 +1975,26 @@ export default function Header({
                   ? 'Chỉnh sửa các thông tin chi tiết bên dưới để cập nhật lại thông tin sự kiện.' 
                   : 'Điền các thông tin chi tiết bên dưới để gửi yêu cầu phê duyệt sự kiện mới lên hệ thống.'}
               </p>
+
+              {myCreator && (
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px',
+                  padding: '10px 14px',
+                  background: 'rgba(139, 92, 246, 0.08)',
+                  borderRadius: '8px',
+                  border: '1px solid rgba(139, 92, 246, 0.2)',
+                  marginBottom: '10px',
+                  zIndex: 2,
+                  position: 'relative'
+                }}>
+                  <img src={myCreator.logo} alt={myCreator.name} style={{ width: '26px', height: '26px', borderRadius: '50%', objectFit: 'cover', border: '1px solid rgba(255,255,255,0.1)' }} />
+                  <span style={{ fontSize: '12px', color: 'var(--text-white)' }}>
+                    Đăng ký dưới danh nghĩa: <strong style={{ color: 'var(--brand-cyan)' }}>{myCreator.name}</strong>
+                  </span>
+                </div>
+              )}
 
               <form onSubmit={handleEventFormSubmit} style={{
                 zIndex: 2,

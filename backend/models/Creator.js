@@ -42,6 +42,13 @@ const Creator = sequelize.define('Creator', {
   },
   stats: {
     type: DataTypes.STRING(100)
+  },
+  userId: {
+    type: DataTypes.STRING(50),
+    references: {
+      model: 'Users',
+      key: 'id'
+    }
   }
 }, {
   tableName: 'Creators',
