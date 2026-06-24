@@ -127,8 +127,8 @@ export const updateEvent = async (req, res) => {
       theme: theme !== undefined ? theme : event.theme,
       isFeatured: isFeatured !== undefined ? isFeatured : event.isFeatured,
       isTrending: isTrending !== undefined ? isTrending : event.isTrending,
-      creatorId: creatorId !== undefined ? creatorId : event.creatorId,
-      organizerId: organizerId !== undefined ? organizerId : event.organizerId,
+      creatorId: creatorId ? creatorId : event.creatorId,
+      organizerId: organizerId ? organizerId : event.organizerId,
       status: status !== undefined ? status : event.status
     }, { transaction: t });
 

@@ -96,6 +96,7 @@ export default function Header({
   const [isEvtSubmitting, setIsEvtSubmitting] = useState(false);
   const [isImgUploading, setIsImgUploading] = useState(false);
   const imgInputRef = useRef(null);
+  const timeInputRef = useRef(null);
   const [myEvents, setMyEvents] = useState([]);
   const [loadingMyEvents, setLoadingMyEvents] = useState(false);
   const [editingEvent, setEditingEvent] = useState(null);
@@ -2070,7 +2071,7 @@ export default function Header({
                       className="edm-input-field-new"
                     />
                   </div>
-                  <div className="edm-input-group" style={{ flex: 1, position: 'relative' }}>
+                  <div className="edm-input-group" style={{ flex: 1, position: 'relative' }} ref={timeInputRef}>
                     <label className="edm-input-label">Giờ diễn ra *</label>
                     <div
                       onClick={() => setShowTimePicker(!showTimePicker)}
@@ -2096,14 +2097,14 @@ export default function Header({
                       <>
                         <div 
                           onClick={() => setShowTimePicker(false)}
-                          style={{ position: 'fixed', inset: 0, zIndex: 100 }}
+                          style={{ position: 'fixed', inset: 0, zIndex: 1504 }}
                         />
                         <div
                           className="custom-time-picker-panel"
                           style={{
-                            position: 'absolute',
-                            top: '64px',
-                            left: 0,
+                            position: 'fixed',
+                            top: timeInputRef.current ? timeInputRef.current.getBoundingClientRect().bottom + window.scrollY + 6 : window.scrollY + 100,
+                            left: timeInputRef.current ? timeInputRef.current.getBoundingClientRect().left + window.scrollX : window.scrollX + 100,
                             width: '180px',
                             height: '180px',
                             background: 'linear-gradient(160deg, rgba(38, 30, 64, 0.98) 0%, rgba(22, 16, 42, 0.99) 100%)',
@@ -2111,7 +2112,7 @@ export default function Header({
                             borderRadius: '12px',
                             boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
                             display: 'flex',
-                            zIndex: 101,
+                            zIndex: 1505,
                             overflow: 'hidden',
                             padding: '8px',
                             boxSizing: 'border-box'
