@@ -6,6 +6,11 @@ function TicketCountdown({ dateStr, isActive }) {
 
   useEffect(() => {
     const parseEventDate = (str) => {
+      if (!str) { const fb = new Date(); fb.setDate(fb.getDate() + 3); return fb; }
+      if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
+        const [year, month, day] = str.split('T')[0].split('-').map(Number);
+        return new Date(year, month - 1, day, 19, 0, 0);
+      }
       try {
         const cleanStr = str.replace(/Tháng\s*/i, '');
         const parts = cleanStr.split(' ');
@@ -117,13 +122,18 @@ const musicWave2D = generateAudioWaveformPath(3.5);  // Sóng nhạc phụ tạo
 
 const getShortDate = (dateStr) => {
   try {
+    if (!dateStr) return 'TBA';
     if (dateStr.includes('Hằng Ngày')) return 'DAILY PASS';
+    const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+    if (/^\d{4}-\d{2}-\d{2}/.test(dateStr)) {
+      const [year, month, day] = dateStr.split('T')[0].split('-').map(Number);
+      return `${String(day).padStart(2, '0')} ${months[month - 1]} ${year}`;
+    }
     const cleanStr = dateStr.replace(/Tháng\s+/i, '').replace(',', '');
     const parts = cleanStr.split(/\s+/);
     const day = parts[0];
     const monthIndex = parseInt(parts[1], 10);
     const year = parts[2] || '2026';
-    const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
     const month = months[monthIndex - 1] || parts[1];
     return `${day} ${month} ${year}`;
   } catch (e) {
