@@ -497,7 +497,7 @@ function App() {
               onBack={() => { setCurrentView('home'); window.scrollTo({ top: 0, behavior: 'auto' }); }}
               fetchResaleTickets={fetchResaleTickets}
               initialTab={initialAccountTab}
-            />}
+            />)}
 
           <div style={{
             width: '100%',
