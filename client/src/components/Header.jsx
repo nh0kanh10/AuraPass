@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, ShoppingBag, Ticket, ChevronDown, Plus, X, Globe, Calendar, Users, Menu, Sun, Moon, Mail, Lock, User, ImagePlus, Loader } from 'lucide-react';
+import { Search, ShoppingBag, Ticket, ChevronDown, Plus, X, Globe, Calendar, Users, Menu, Sun, Moon, Mail, Lock, User, ImagePlus, Loader, Eye, Pencil } from 'lucide-react';
 
 const SECTION_LED = {
   events: { color: 'oklch(70% 0.18 300)', glow: 'oklch(70% 0.18 300 / 0.9)' },
@@ -95,6 +95,37 @@ export default function Header({
   const imgInputRef = useRef(null);
   const [myEvents, setMyEvents] = useState([]);
   const [loadingMyEvents, setLoadingMyEvents] = useState(false);
+  const [editingEvent, setEditingEvent] = useState(null);
+  const [viewingEvent, setViewingEvent] = useState(null);
+
+  const startEditEvent = (event) => {
+    setEditingEvent(event);
+    setEvtTitle(event.title || '');
+    setEvtDescription(event.description || '');
+    setEvtCategory(event.category || 'concert');
+    setEvtDate(event.date || '');
+    setEvtTime(event.time || '19:30');
+    setEvtLocation(event.location || '');
+    setEvtPriceRange(event.priceRange || '');
+    setEvtImage(event.image || '');
+    setEvtBadge(event.badge || '');
+    setEvtTheme(event.theme || 'cyberpunk');
+    setEvtZones(event.zones && event.zones.length > 0 ? event.zones.map(z => ({
+      name: z.name,
+      price: z.price,
+      isStanding: z.isStanding,
+      availableTickets: z.availableTickets
+    })) : [
+      { name: 'GA', price: 500000, isStanding: true, availableTickets: 200 },
+      { name: 'VIP', price: 1500000, isStanding: false, availableTickets: 50 }
+    ]);
+    setModalType('edit-event');
+  };
+
+  const startViewEvent = (event) => {
+    setViewingEvent(event);
+    setModalType('view-event-detail');
+  };
 
   const fetchMyEvents = async () => {
     if (!currentUser || !currentUser.id) return;
@@ -141,7 +172,7 @@ export default function Header({
     }
   };
 
-  const handleCreateEventSubmit = async (e) => {
+  const handleEventFormSubmit = async (e) => {
     e.preventDefault();
     const missing = [];
     if (!evtTitle) missing.push('Tên sự kiện');
@@ -157,8 +188,14 @@ export default function Header({
     }
     setIsEvtSubmitting(true);
     try {
-      const res = await fetch('http://localhost:5000/api/events', {
-        method: 'POST',
+      const isEdit = modalType === 'edit-event';
+      const url = isEdit 
+        ? `http://localhost:5000/api/events/${editingEvent.id}`
+        : 'http://localhost:5000/api/events';
+      const method = isEdit ? 'PUT' : 'POST';
+
+      const res = await fetch(url, {
+        method: method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title: evtTitle,
@@ -173,19 +210,23 @@ export default function Header({
           theme: evtTheme,
           zones: evtZones,
           organizerId: currentUser ? currentUser.id : null,
-          status: 'pending'
+          status: isEdit ? editingEvent.status : 'pending'
         })
       });
 
       if (!res.ok) {
         const errData = await res.json();
-        await showAlert(errData.error || 'Tạo sự kiện thất bại');
+        await showAlert(errData.error || (isEdit ? 'Cập nhật sự kiện thất bại' : 'Tạo sự kiện thất bại'));
         setIsEvtSubmitting(false);
         return;
       }
 
-      await showAlert('Tạo sự kiện thành công! Sự kiện đang được chờ ban quản trị phê duyệt.');
-      setModalType(null);
+      await showAlert(isEdit 
+        ? 'Cập nhật sự kiện thành công!' 
+        : 'Tạo sự kiện thành công! Sự kiện đang được chờ ban quản trị phê duyệt.'
+      );
+      setModalType('my-events');
+      setEditingEvent(null);
       setShowTimePicker(false);
       setEvtTitle('');
       setEvtDescription('');
@@ -197,9 +238,14 @@ export default function Header({
       setEvtImage('');
       setEvtBadge('');
       setEvtTheme('cyberpunk');
+      setEvtZones([
+        { name: 'GA', price: 500000, isStanding: true, availableTickets: 200 },
+        { name: 'VIP', price: 1500000, isStanding: false, availableTickets: 50 }
+      ]);
+      fetchMyEvents();
     } catch (err) {
       console.error(err);
-      await showAlert('Không thể kết nối tới server API để tạo sự kiện');
+      await showAlert('Không thể kết nối tới server API');
     } finally {
       setIsEvtSubmitting(false);
     }
@@ -1666,11 +1712,170 @@ export default function Header({
               cursor: pointer;
               accent-color: var(--brand-violet);
             }
+
+            /* ── My Events Modal Enhancement ── */
+            .my-evt-card {
+              background: linear-gradient(135deg, rgba(30, 25, 55, 0.45) 0%, rgba(15, 12, 28, 0.65) 100%);
+              border: 1px solid rgba(255, 255, 255, 0.06);
+              border-radius: 12px;
+              padding: 16px;
+              display: flex;
+              gap: 16px;
+              position: relative;
+              overflow: hidden;
+              transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+              box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+              backdrop-filter: blur(12px);
+              -webkit-backdrop-filter: blur(12px);
+            }
+            .my-evt-card:hover {
+              transform: translateY(-2px);
+              border-color: rgba(167, 139, 250, 0.4);
+              box-shadow: 
+                0 10px 25px rgba(167, 139, 250, 0.08),
+                0 0 15px rgba(167, 139, 250, 0.03),
+                inset 0 1px 0 rgba(255, 255, 255, 0.05);
+              background: linear-gradient(135deg, rgba(35, 30, 65, 0.55) 0%, rgba(20, 16, 36, 0.75) 100%);
+            }
+            .my-evt-img {
+              width: 72px;
+              height: 96px;
+              object-fit: cover;
+              border-radius: 8px;
+              border: 1px solid rgba(255, 255, 255, 0.08);
+              box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+              transition: transform 0.3s ease;
+            }
+            .my-evt-card:hover .my-evt-img {
+              transform: scale(1.03);
+            }
+            .my-evt-info {
+              display: flex;
+              flex-direction: column;
+              flex-grow: 1;
+              min-width: 0;
+              justify-content: space-between;
+            }
+            .my-evt-title {
+              font-size: 14px;
+              font-weight: 700;
+              color: #ffffff;
+              margin: 6px 0 4px 0;
+              overflow: hidden;
+              text-overflow: ellipsis;
+              white-space: nowrap;
+              font-family: var(--font-display);
+              letter-spacing: 0.02em;
+            }
+            .my-evt-meta {
+              font-size: 11px;
+              color: rgba(255, 255, 255, 0.5);
+              display: flex;
+              align-items: center;
+              gap: 4px;
+              margin-bottom: 2px;
+              font-family: var(--font-body);
+            }
+            .my-evt-price {
+              font-size: 11px;
+              color: var(--brand-cyan);
+              font-weight: 600;
+              margin-top: 2px;
+              font-family: var(--font-mono);
+            }
+            .my-evt-actions {
+              display: flex;
+              gap: 8px;
+              margin-top: 8px;
+              z-index: 5;
+            }
+            .my-evt-btn {
+              padding: 5px 10px;
+              border-radius: 6px;
+              font-size: 11px;
+              font-weight: 600;
+              cursor: pointer;
+              transition: all 0.2s ease;
+              display: flex;
+              align-items: center;
+              gap: 4px;
+              font-family: var(--font-mono);
+              text-transform: uppercase;
+              letter-spacing: 0.05em;
+              border: none;
+            }
+            .my-evt-btn-view {
+              background: rgba(255, 255, 255, 0.04);
+              color: rgba(255, 255, 255, 0.75);
+              border: 1px solid rgba(255, 255, 255, 0.08);
+            }
+            .my-evt-btn-view:hover {
+              background: rgba(255, 255, 255, 0.08);
+              color: #ffffff;
+              border-color: rgba(255, 255, 255, 0.2);
+            }
+            .my-evt-btn-edit {
+              background: rgba(251, 191, 36, 0.06);
+              color: #fbbf24;
+              border: 1px solid rgba(251, 191, 36, 0.15);
+            }
+            .my-evt-btn-edit:hover {
+              background: rgba(251, 191, 36, 0.12);
+              color: #ffca3a;
+              border-color: rgba(251, 191, 36, 0.4);
+              box-shadow: 0 0 10px rgba(251, 191, 36, 0.08);
+            }
+
+            /* Detail Modal */
+            .detail-modal-carrier {
+              max-width: 500px !important;
+            }
+            .detail-hero-banner {
+              width: 100%;
+              height: 180px;
+              object-fit: cover;
+              border-radius: 8px;
+              border: 1px solid rgba(255, 255, 255, 0.08);
+              margin-bottom: 14px;
+              box-shadow: 0 6px 15px rgba(0, 0, 0, 0.4);
+            }
+            .detail-field-group {
+              display: flex;
+              flex-direction: column;
+              gap: 4px;
+              background: rgba(255, 255, 255, 0.02);
+              border: 1px solid rgba(255, 255, 255, 0.04);
+              border-radius: 8px;
+              padding: 10px 12px;
+            }
+            .detail-field-label {
+              font-family: var(--font-mono);
+              font-size: 9px;
+              color: var(--text-muted);
+              text-transform: uppercase;
+              letter-spacing: 0.08em;
+            }
+            .detail-field-value {
+              font-size: 13px;
+              color: #ffffff;
+              font-weight: 500;
+            }
           `}</style>
 
-          <div className={`edm-modal-carrier ${modalType === 'login' ? 'auth-modal-carrier' : ''} ${modalType === 'create' ? 'create-modal-carrier' : ''}`}>
+          <div className={`edm-modal-carrier ${modalType === 'login' ? 'auth-modal-carrier' : ''} ${(modalType === 'create' || modalType === 'edit-event') ? 'create-modal-carrier' : ''} ${modalType === 'view-event-detail' ? 'detail-modal-carrier' : ''}`}>
             {modalType !== 'login' && (
-              <button onClick={() => setModalType(null)} className="edm-modal-close-btn">
+              <button 
+                onClick={() => {
+                  if (modalType === 'edit-event' || modalType === 'view-event-detail') {
+                    setModalType('my-events');
+                    setEditingEvent(null);
+                    setViewingEvent(null);
+                  } else {
+                    setModalType(null);
+                  }
+                }} 
+                className="edm-modal-close-btn"
+              >
                 <X size={13} />
               </button>
             )}
@@ -1713,16 +1918,36 @@ export default function Header({
               </svg>
             </div>
 
-            {modalType === 'create' && <>
+            {(modalType === 'create' || modalType === 'edit-event') && <>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px', zIndex: 2, position: 'relative' }}>
-                <span className="vip-modal-subtitle">Tạo Sự Kiện Mới</span>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: '8.5px', letterSpacing: '0.12em', color: '#fbbf24', opacity: 0.95, fontWeight: 700 }}>ORGANIZER PANEL</span>
+                <span className="vip-modal-subtitle">{modalType === 'edit-event' ? 'Cập Nhật Sự Kiện' : 'Tạo Sự Kiện Mới'}</span>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: '8.5px', letterSpacing: '0.12em', color: '#fbbf24', opacity: 0.95, fontWeight: 700 }}>
+                  {modalType === 'edit-event' ? 'EDIT PASS' : 'ORGANIZER PANEL'}
+                </span>
               </div>
 
-              <h3 className="edm-modal-glow-title">Tạo Sự Kiện</h3>
-              <p className="edm-modal-desc">Điền các thông tin chi tiết bên dưới để gửi yêu cầu phê duyệt sự kiện mới lên hệ thống.</p>
+              {modalType === 'edit-event' && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', zIndex: 2, position: 'relative' }}>
+                  <button 
+                    onClick={() => {
+                      setModalType('my-events');
+                      setEditingEvent(null);
+                    }} 
+                    style={{ background: 'none', border: 'none', color: 'var(--brand-cyan)', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px', padding: 0 }}
+                  >
+                    &larr; QUAY LẠI DANH SÁCH
+                  </button>
+                </div>
+              )}
 
-              <form onSubmit={handleCreateEventSubmit} style={{
+              <h3 className="edm-modal-glow-title">{modalType === 'edit-event' ? 'Sửa Sự Kiện' : 'Tạo Sự Kiện'}</h3>
+              <p className="edm-modal-desc">
+                {modalType === 'edit-event' 
+                  ? 'Chỉnh sửa các thông tin chi tiết bên dưới để cập nhật lại thông tin sự kiện.' 
+                  : 'Điền các thông tin chi tiết bên dưới để gửi yêu cầu phê duyệt sự kiện mới lên hệ thống.'}
+              </p>
+
+              <form onSubmit={handleEventFormSubmit} style={{
                 zIndex: 2,
                 position: 'relative',
                 display: 'flex',
@@ -2099,26 +2324,14 @@ export default function Header({
                     }
 
                     return (
-                      <div
-                        key={event.id}
-                        style={{
-                          background: 'linear-gradient(135deg, rgba(25, 20, 45, 0.6) 0%, rgba(12, 10, 20, 0.8) 100%)',
-                          border: '1px solid rgba(255, 255, 255, 0.08)',
-                          borderRadius: '12px',
-                          padding: '16px',
-                          display: 'flex',
-                          gap: '14px',
-                          position: 'relative',
-                          overflow: 'hidden'
-                        }}
-                      >
+                      <div key={event.id} className="my-evt-card">
                         <img
                           src={event.image}
                           alt={event.title}
-                          style={{ width: '70px', height: '90px', objectFit: 'cover', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.06)' }}
+                          className="my-evt-img"
                         />
 
-                        <div style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, minWidth: 0 }}>
+                        <div className="my-evt-info">
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '4px' }}>
                             <span style={{
                               padding: '2px 6px',
@@ -2143,16 +2356,32 @@ export default function Header({
                             </span>
                           </div>
 
-                          <h4 style={{ fontSize: '13px', fontWeight: 700, color: '#fff', margin: '6px 0 2px 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: 'var(--font-display)' }}>
+                          <h4 className="my-evt-title">
                             {event.title}
                           </h4>
 
-                          <p style={{ fontSize: '11px', color: 'var(--text-muted)', margin: '0 0 6px 0' }}>
-                            {event.date} • {event.time}
-                          </p>
-                          <p style={{ fontSize: '11px', color: 'var(--text-muted)', margin: '0' }}>
-                            Giá vé: {event.priceRange}
-                          </p>
+                          <div className="my-evt-meta">
+                            <Calendar size={12} style={{ opacity: 0.6 }} />
+                            <span>{event.date} • {event.time}</span>
+                          </div>
+                          
+                          <div className="my-evt-meta" style={{ opacity: 0.75 }}>
+                            <MapPin size={12} style={{ opacity: 0.6 }} />
+                            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{event.location}</span>
+                          </div>
+
+                          <div className="my-evt-price">Giá: {event.priceRange}</div>
+
+                          <div className="my-evt-actions">
+                            <button className="my-evt-btn my-evt-btn-view" onClick={() => startViewEvent(event)}>
+                              <Eye size={11} />
+                              <span>Chi tiết</span>
+                            </button>
+                            <button className="my-evt-btn my-evt-btn-edit" onClick={() => startEditEvent(event)}>
+                              <Pencil size={10} />
+                              <span>Sửa</span>
+                            </button>
+                          </div>
                         </div>
                       </div>
                     );
@@ -2160,6 +2389,111 @@ export default function Header({
                 )}
               </div>
             </>}
+
+            {modalType === 'view-event-detail' && viewingEvent && (
+              <>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', zIndex: 2, position: 'relative' }}>
+                  <span className="vip-modal-subtitle">Chi Tiết Sự Kiện</span>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: '8.5px', letterSpacing: '0.12em', color: 'var(--brand-cyan)', opacity: 0.95, fontWeight: 700 }}>EVENT DETAILS</span>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px', zIndex: 2, position: 'relative' }}>
+                  <button 
+                    onClick={() => {
+                      setModalType('my-events');
+                      setViewingEvent(null);
+                    }} 
+                    style={{ background: 'none', border: 'none', color: 'var(--brand-cyan)', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px', padding: 0 }}
+                  >
+                    &larr; QUAY LẠI DANH SÁCH
+                  </button>
+                </div>
+
+                <div className="wallet-tickets-container" style={{
+                  maxHeight: '380px',
+                  overflowY: 'auto',
+                  paddingRight: '6px',
+                  zIndex: 2,
+                  position: 'relative',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '12px'
+                }}>
+                  <img src={viewingEvent.image} alt={viewingEvent.title} className="detail-hero-banner" />
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
+                    <span style={{
+                      padding: '3px 8px',
+                      borderRadius: '4px',
+                      background: 'rgba(0, 242, 254, 0.1)',
+                      color: 'var(--brand-cyan)',
+                      border: '1px solid rgba(0, 242, 254, 0.25)',
+                      fontWeight: 700,
+                      textTransform: 'uppercase',
+                      fontSize: '9px',
+                      letterSpacing: '0.05em'
+                    }}>
+                      {viewingEvent.category}
+                    </span>
+                    <span style={{ fontSize: '9px', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>
+                      ID: {viewingEvent.id.toUpperCase()}
+                    </span>
+                  </div>
+
+                  <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#fff', margin: '4px 0', fontFamily: 'var(--font-display)', lineHeight: 1.3 }}>
+                    {viewingEvent.title}
+                  </h3>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                    <div className="detail-field-group">
+                      <span className="detail-field-label">Thời gian</span>
+                      <span className="detail-field-value">{viewingEvent.date} • {viewingEvent.time}</span>
+                    </div>
+                    <div className="detail-field-group">
+                      <span className="detail-field-label">Khoảng giá</span>
+                      <span className="detail-field-value">{viewingEvent.priceRange}</span>
+                    </div>
+                  </div>
+
+                  <div className="detail-field-group">
+                    <span className="detail-field-label">Địa điểm tổ chức</span>
+                    <span className="detail-field-value">{viewingEvent.location}</span>
+                  </div>
+
+                  {viewingEvent.description && (
+                    <div className="detail-field-group">
+                      <span className="detail-field-label">Mô tả sự kiện</span>
+                      <span className="detail-field-value" style={{ fontWeight: 400, opacity: 0.85, whiteSpace: 'pre-wrap', lineHeight: 1.5 }}>
+                        {viewingEvent.description}
+                      </span>
+                    </div>
+                  )}
+
+                  {viewingEvent.zones && viewingEvent.zones.length > 0 && (
+                    <div className="detail-field-group">
+                      <span className="detail-field-label">Hạng vé cấu hình</span>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '4px' }}>
+                        {viewingEvent.zones.map((zone, idx) => (
+                          <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', paddingBottom: '4px', borderBottom: idx < viewingEvent.zones.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}>
+                            <span style={{ fontWeight: 700, color: '#fff' }}>{zone.name}</span>
+                            <span style={{ color: 'rgba(255,255,255,0.6)' }}>
+                              {zone.price.toLocaleString('vi-VN')} đ • <span style={{ color: 'var(--brand-cyan)' }}>{zone.availableTickets} vé</span>
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <button 
+                    onClick={() => startEditEvent(viewingEvent)} 
+                    className="edm-btn-action" 
+                    style={{ marginTop: '10px' }}
+                  >
+                    CHỈNH SỬA SỰ KIỆN NÀY
+                  </button>
+                </div>
+              </>}
 
             {modalType === 'tickets' && !currentUser && (
               <>
