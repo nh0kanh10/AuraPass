@@ -10,7 +10,9 @@ export const getEvents = async (req, res) => {
       }
       where.organizerId = organizerId;
     } else if (status) {
-      where.status = status;
+      if (status !== 'all') {
+        where.status = status;
+      }
     } else {
       where.status = 'approved';
     }

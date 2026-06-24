@@ -515,7 +515,7 @@ export default function AdminDashboard({
   const fetchAllData = async () => {
     try {
       const [eventsRes, bookingsRes, ticketsRes, creatorsRes, usersRes] = await Promise.all([
-        fetch('http://localhost:5000/api/events'),
+        fetch('http://localhost:5000/api/events?status=all'),
         fetch('http://localhost:5000/api/admin/bookings'),
         fetch('http://localhost:5000/api/admin/resale'),
         fetch('http://localhost:5000/api/creators'),
@@ -1615,6 +1615,18 @@ export default function AdminDashboard({
           background: rgba(245, 158, 11, 0.15);
           color: oklch(75% 0.14 70);
           border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+
+        .admin-status-badge.organizer {
+          background: rgba(139, 92, 246, 0.15);
+          color: oklch(75% 0.18 300);
+          border: 1px solid rgba(139, 92, 246, 0.3);
+        }
+
+        .admin-status-badge.client {
+          background: rgba(255, 255, 255, 0.05);
+          color: var(--text-muted);
+          border: 1px solid rgba(255, 255, 255, 0.12);
         }
 
         .admin-form-group {
@@ -3711,8 +3723,10 @@ export default function AdminDashboard({
                           <td>{u.email}</td>
                           <td>{u.phone || '—'}</td>
                           <td>
-                            <span className={`admin-status-badge ${u.role === 'admin' ? 'paid' : 'pending'}`}>
-                              {u.role === 'admin' ? 'Admin' : 'Client'}
+                            <span className={`admin-status-badge ${
+                              u.role === 'admin' ? 'paid' : (u.role === 'organizer' ? 'organizer' : 'client')
+                            }`}>
+                              {u.role === 'admin' ? 'Admin' : (u.role === 'organizer' ? 'Nhà tổ chức' : 'Client')}
                             </span>
                           </td>
                           <td style={{ textAlign: 'right' }}>
@@ -3727,7 +3741,7 @@ export default function AdminDashboard({
                               <button 
                                 onClick={() => handleToggleUserRole(u.id)}
                                 className="action-icon-btn btn-check" 
-                                title="Thay đổi vai trò (Admin/Client)"
+                                title="Thay đổi vai trò (Admin / Nhà tổ chức / Client)"
                               >
                                 <RefreshCw size={14} />
                               </button>

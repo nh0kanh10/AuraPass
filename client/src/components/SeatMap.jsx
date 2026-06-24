@@ -5,6 +5,8 @@ export default function SeatMap({ event, onBack, onProceedCheckout, showAlert })
   const [selectedZone, setSelectedZone] = useState(event.zones[0]);
   const [selectedSeats, setSelectedSeats] = useState([]);
   const [standingCount, setStandingCount] = useState(0);
+  const [takenSeats, setTakenSeats] = useState([]);
+  const [loadingTakenSeats, setLoadingTakenSeats] = useState(false);
 
 
   useEffect(() => {
@@ -12,8 +14,34 @@ export default function SeatMap({ event, onBack, onProceedCheckout, showAlert })
     setStandingCount(0);
   }, [selectedZone]);
 
-  const isSeatTaken = (zoneId, rowIdx, colIdx) => {
-    return (rowIdx * 3 + colIdx * 7 + 2) % 6 === 0;
+  useEffect(() => {
+    const fetchTakenSeats = async () => {
+      if (!selectedZone || selectedZone.isStanding) {
+        setTakenSeats([]);
+        return;
+      }
+      setLoadingTakenSeats(true);
+      try {
+        const response = await fetch(`http://localhost:5000/api/bookings/taken-seats?zoneId=${selectedZone.id}`);
+        if (response.ok) {
+          const data = await response.json();
+          setTakenSeats(data);
+        }
+      } catch (error) {
+        console.error("Lỗi khi tải danh sách ghế đã bán:", error);
+      } finally {
+        setLoadingTakenSeats(false);
+      }
+    };
+
+    fetchTakenSeats();
+  }, [selectedZone]);
+
+  const isSeatTaken = (zoneId, rowIdx, seatNum) => {
+    if (selectedZone.isStanding) return false;
+    const rowLetter = String.fromCharCode(65 + rowIdx);
+    const seatId = `${rowLetter}-${seatNum}`;
+    return takenSeats.includes(seatId);
   };
 
   const toggleSeatSelection = (rowName, colNum) => {
@@ -180,15 +208,40 @@ export default function SeatMap({ event, onBack, onProceedCheckout, showAlert })
         }
 
         .seat.taken {
-          background: rgba(255, 255, 255, 0.03) !important;
-          border-color: rgba(255, 255, 255, 0.08) !important;
-          color: rgba(255, 255, 255, 0.18) !important;
-          opacity: 0.22 !important;
+          background: rgba(255, 255, 255, 0.06) !important;
+          border-color: rgba(255, 255, 255, 0.15) !important;
+          color: rgba(255, 255, 255, 0.15) !important;
+          opacity: 0.65 !important;
           cursor: not-allowed !important;
           box-shadow: none !important;
         }
-        .seat.taken::before, .seat.taken::after {
-          display: none !important;
+        .seat.taken::before {
+          content: '' !important;
+          position: absolute !important;
+          top: 15% !important;
+          left: 50% !important;
+          width: 1.5px !important;
+          height: 70% !important;
+          background: rgba(239, 68, 68, 0.6) !important;
+          transform: translateX(-50%) rotate(45deg) !important;
+          display: block !important;
+          z-index: 2 !important;
+          box-shadow: none !important;
+          border-radius: 1px !important;
+        }
+        .seat.taken::after {
+          content: '' !important;
+          position: absolute !important;
+          top: 15% !important;
+          left: 50% !important;
+          width: 1.5px !important;
+          height: 70% !important;
+          background: rgba(239, 68, 68, 0.6) !important;
+          transform: translateX(-50%) rotate(-45deg) !important;
+          display: block !important;
+          z-index: 2 !important;
+          box-shadow: none !important;
+          border-radius: 1px !important;
         }
 
         .seat.selected {

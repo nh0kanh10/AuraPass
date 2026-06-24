@@ -170,3 +170,23 @@ export const deleteBooking = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+export const getTakenSeats = async (req, res) => {
+  const { zoneId } = req.query;
+  if (!zoneId) return res.status(400).json({ error: 'Thiếu zoneId' });
+  try {
+    const tickets = await Ticket.findAll({
+      where: { 
+        zoneId,
+        status: ['active', 'reselling']
+      },
+      attributes: ['seatNumber']
+    });
+    const takenSeats = tickets
+      .map(t => t.seatNumber)
+      .filter(seat => seat !== null);
+    res.json(takenSeats);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};

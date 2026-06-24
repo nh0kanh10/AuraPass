@@ -19,6 +19,8 @@ export default function SpotlightEvents({ events, onBookClick }) {
   const [isDragging, setIsDragging] = useState(false);
   const [activeId, setActiveId] = useState('');
   const [tiltStyles, setTiltStyles] = useState({});
+  const dragStartPageX = useRef(0);
+  const dragOccurred = useRef(false);
 
   const spotlightEvents = (events || []).filter(e => e.isFeatured);
   const isStatic = spotlightEvents.length < 4;
@@ -72,7 +74,8 @@ export default function SpotlightEvents({ events, onBookClick }) {
 
     isDown.current = true;
     autoScrollActive.current = false;
-    setIsDragging(true);
+    dragStartPageX.current = e.pageX;
+    dragOccurred.current = false;
 
     startX.current = e.pageX - slider.offsetLeft;
     scrollLeftStart.current = slider.scrollLeft;
@@ -87,6 +90,13 @@ export default function SpotlightEvents({ events, onBookClick }) {
     if (!slider) return;
 
     e.preventDefault();
+
+    if (Math.abs(e.pageX - dragStartPageX.current) > 5) {
+      if (!isDragging) {
+        setIsDragging(true);
+      }
+      dragOccurred.current = true;
+    }
 
     const x = e.pageX - slider.offsetLeft;
     const walk = (x - startX.current) * 1.5;
@@ -160,9 +170,11 @@ export default function SpotlightEvents({ events, onBookClick }) {
 
     isDown.current = true;
     autoScrollActive.current = false;
-    setIsDragging(true);
 
     const touch = e.touches[0];
+    dragStartPageX.current = touch.pageX;
+    dragOccurred.current = false;
+
     startX.current = touch.pageX - slider.offsetLeft;
     scrollLeftStart.current = slider.scrollLeft;
     lastX.current = touch.pageX;
@@ -176,6 +188,14 @@ export default function SpotlightEvents({ events, onBookClick }) {
     if (!slider) return;
 
     const touch = e.touches[0];
+
+    if (Math.abs(touch.pageX - dragStartPageX.current) > 5) {
+      if (!isDragging) {
+        setIsDragging(true);
+      }
+      dragOccurred.current = true;
+    }
+
     const x = touch.pageX - slider.offsetLeft;
     const walk = (x - startX.current) * 1.5;
     slider.scrollLeft = scrollLeftStart.current - walk;
@@ -349,7 +369,12 @@ export default function SpotlightEvents({ events, onBookClick }) {
                       setActiveId(uniqueKey);
                     }
                   }}
-                  onClick={() => {
+                  onClick={(e) => {
+                    if (dragOccurred.current) {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      return;
+                    }
                     if (isActive) {
                       onBookClick(event);
                     } else {
@@ -423,6 +448,7 @@ export default function SpotlightEvents({ events, onBookClick }) {
                         className="spotlight-btn-buy"
                         onClick={(e) => {
                           e.stopPropagation();
+                          if (dragOccurred.current) return;
                           onBookClick(event);
                         }}
                       >

@@ -4,6 +4,7 @@ import { ArrowLeft, CreditCard, QrCode, ClipboardCheck, Mail, Phone, User, Check
 export default function Checkout({ bookingData, onBack, onComplete, showAlert, currentUser, onConfirmBooking }) {
   const { event, zone, count, seats, totalPrice } = bookingData;
   const [step, setStep] = useState(1);
+  const [isProcessing, setIsProcessing] = useState(false);
   
 
   const [fullName, setFullName] = useState('');
@@ -61,15 +62,23 @@ export default function Checkout({ bookingData, onBack, onComplete, showAlert, c
   };
 
   const handleConfirmPayment = async () => {
-    const result = await onConfirmBooking({ fullName, email, phone });
-    if (result) {
-      if (result.booking) {
-        setCreatedTicketId(result.booking.ticketId);
-        setCreatedTickets(result.tickets || []);
-      } else if (result.ticketId) {
-        setCreatedTicketId(result.ticketId);
+    if (isProcessing) return;
+    setIsProcessing(true);
+    try {
+      const result = await onConfirmBooking({ fullName, email, phone });
+      if (result) {
+        if (result.booking) {
+          setCreatedTicketId(result.booking.ticketId);
+          setCreatedTickets(result.tickets || []);
+        } else if (result.ticketId) {
+          setCreatedTicketId(result.ticketId);
+        }
+        setStep(3);
       }
-      setStep(3);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -196,6 +205,20 @@ export default function Checkout({ bookingData, onBack, onComplete, showAlert, c
           text-shadow: 0 0 8px rgba(239, 68, 68, 0.1);
           margin-top: 4px;
           font-family: var(--font-body);
+        }
+
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+        .spinner {
+          width: 16px;
+          height: 16px;
+          border: 2px solid rgba(255, 255, 255, 0.3);
+          border-top-color: #fff;
+          border-radius: 50%;
+          animation: spin 0.8s linear infinite;
+          display: inline-block;
         }
       `}</style>
       
@@ -473,6 +496,7 @@ export default function Checkout({ bookingData, onBack, onComplete, showAlert, c
 
             <button 
               onClick={handleConfirmPayment}
+              disabled={isProcessing}
               className="btn-primary" 
               style={{
                 width: '100%',
@@ -482,26 +506,36 @@ export default function Checkout({ bookingData, onBack, onComplete, showAlert, c
                 fontFamily: 'var(--font-display)',
                 fontWeight: 600,
                 borderRadius: '8px',
-                background: 'linear-gradient(90deg, var(--brand-violet) 0%, oklch(48% 0.25 300) 100%)',
+                background: isProcessing 
+                  ? 'var(--text-muted)' 
+                  : 'linear-gradient(90deg, var(--brand-violet) 0%, oklch(48% 0.25 300) 100%)',
                 border: '1px solid rgba(167, 139, 250, 0.25)',
                 color: 'var(--text-white)',
-                boxShadow: '0 4px 15px rgba(139, 92, 246, 0.2)',
+                boxShadow: isProcessing ? 'none' : '0 4px 15px rgba(139, 92, 246, 0.2)',
                 transition: 'all 0.3s ease',
                 zIndex: 2,
-                position: 'relative'
+                position: 'relative',
+                cursor: isProcessing ? 'not-allowed' : 'pointer'
               }}
               onMouseEnter={(e) => {
+                if (isProcessing) return;
                 e.currentTarget.style.background = 'linear-gradient(90deg, oklch(60% 0.25 300) 0%, var(--brand-cyan) 100%)';
                 e.currentTarget.style.borderColor = 'rgba(6, 182, 212, 0.5)';
                 e.currentTarget.style.boxShadow = '0 6px 20px rgba(6, 182, 212, 0.25)';
               }}
               onMouseLeave={(e) => {
+                if (isProcessing) return;
                 e.currentTarget.style.background = 'linear-gradient(90deg, var(--brand-violet) 0%, oklch(48% 0.25 300) 100%)';
                 e.currentTarget.style.borderColor = 'rgba(167, 139, 250, 0.25)';
                 e.currentTarget.style.boxShadow = '0 4px 15px rgba(139, 92, 246, 0.2)';
               }}
             >
-              Tôi Đã Hoàn Tất Chuyển Khoản
+              {isProcessing ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center' }}>
+                  <span className="spinner" />
+                  Đang xác thực giao dịch...
+                </div>
+              ) : "Tôi Đã Hoàn Tất Chuyển Khoản"}
             </button>
           </div>
 
@@ -543,9 +577,9 @@ export default function Checkout({ bookingData, onBack, onComplete, showAlert, c
               }}>
                 <CheckCircle2 size={32} color="var(--brand-emerald)" />
               </div>
-              <h2 style={{ fontSize: '28px', fontFamily: 'var(--font-display)', color: '#fff' }}>Đặt Vé Thành Công!</h2>
+              <h2 style={{ fontSize: '28px', fontFamily: 'var(--font-display)', color: 'var(--brand-pearl)' }}>Đặt Vé Thành Công!</h2>
               <p style={{ fontSize: '14.5px', color: 'var(--text-muted)', maxWidth: '460px', lineHeight: '1.6' }}>
-                Vé điện tử đã được gửi về email <strong style={{ color: 'var(--text-white)' }}>{email}</strong>. Bạn hãy lưu lại mã QR check-in dưới đây để xuất trình tại cổng sự kiện.
+                Vé điện tử đã được gửi về email <strong style={{ color: 'var(--brand-cyan)' }}>{email}</strong>. Bạn hãy lưu lại mã QR check-in dưới đây để xuất trình tại cổng sự kiện.
               </p>
             </div>
 
@@ -600,13 +634,13 @@ export default function Checkout({ bookingData, onBack, onComplete, showAlert, c
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                     <div>
                       <span style={{ fontSize: '10.5px', color: 'var(--text-muted)', textTransform: 'uppercase', fontFamily: 'var(--font-mono)', letterSpacing: '0.05em' }}>Thời Gian</span>
-                      <div style={{ fontSize: '13.5px', fontWeight: 600, color: 'var(--text-white)', marginTop: '4px', lineHeight: '1.4' }}>
+                      <div style={{ fontSize: '13.5px', fontWeight: 600, color: 'var(--brand-pearl)', marginTop: '4px', lineHeight: '1.4' }}>
                         {event.date}<br />{event.time}
                       </div>
                     </div>
                     <div>
                       <span style={{ fontSize: '10.5px', color: 'var(--text-muted)', textTransform: 'uppercase', fontFamily: 'var(--font-mono)', letterSpacing: '0.05em' }}>Địa Điểm</span>
-                      <div style={{ fontSize: '13.5px', fontWeight: 600, color: 'var(--text-white)', marginTop: '4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '170px', lineHeight: '1.4' }} title={event.location}>
+                      <div style={{ fontSize: '13.5px', fontWeight: 600, color: 'var(--brand-pearl)', marginTop: '4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '170px', lineHeight: '1.4' }} title={event.location}>
                         {event.location.split(',')[0]}
                       </div>
                     </div>
@@ -621,7 +655,7 @@ export default function Checkout({ bookingData, onBack, onComplete, showAlert, c
                     </div>
                     <div>
                       <span style={{ fontSize: '10.5px', color: 'var(--text-muted)', textTransform: 'uppercase', fontFamily: 'var(--font-mono)', letterSpacing: '0.05em' }}>Vị trí ghế / vé</span>
-                      <div style={{ fontSize: '14.5px', fontWeight: 700, color: 'var(--text-white)', marginTop: '4px', fontFamily: 'var(--font-mono)' }}>
+                      <div style={{ fontSize: '14.5px', fontWeight: 700, color: 'var(--brand-pearl)', marginTop: '4px', fontFamily: 'var(--font-mono)' }}>
                         {zone.isStanding ? `${count} Vé Đứng` : seats.join(', ')}
                       </div>
                     </div>
@@ -629,7 +663,7 @@ export default function Checkout({ bookingData, onBack, onComplete, showAlert, c
 
                   <div style={{ borderTop: '1px dashed rgba(255,255,255,0.1)', paddingTop: '16px' }}>
                     <span style={{ fontSize: '10.5px', color: 'var(--text-muted)', textTransform: 'uppercase', fontFamily: 'var(--font-mono)', letterSpacing: '0.05em' }}>Khách Hàng VIP</span>
-                    <div style={{ fontSize: '13.5px', fontWeight: 600, color: 'var(--text-white)', marginTop: '4px' }}>
+                    <div style={{ fontSize: '13.5px', fontWeight: 600, color: 'var(--brand-pearl)', marginTop: '4px' }}>
                       {fullName} · {phone}
                     </div>
                   </div>
@@ -694,7 +728,7 @@ export default function Checkout({ bookingData, onBack, onComplete, showAlert, c
                 justifyContent: 'space-between',
                 alignItems: 'center',
                 fontSize: '11px',
-                color: 'var(--text-muted)',
+                color: 'var(--text-secondary)',
                 fontFamily: 'var(--font-mono)',
                 letterSpacing: '0.05em'
               }}>

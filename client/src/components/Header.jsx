@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, ShoppingBag, Ticket, ChevronDown, Plus, X, Globe, Calendar, Users, Menu, Sun, Moon, Mail, Lock, User, ImagePlus, Loader, Eye, Pencil } from 'lucide-react';
+import { Search, ShoppingBag, Ticket, ChevronDown, Plus, X, Globe, Calendar, Users, Menu, Sun, Moon, Mail, Lock, User, ImagePlus, Loader, Eye, Pencil, MapPin } from 'lucide-react';
 
 const SECTION_LED = {
   events: { color: 'oklch(70% 0.18 300)', glow: 'oklch(70% 0.18 300 / 0.9)' },
@@ -46,6 +46,7 @@ export default function Header({
   const [isResaleSubmitting, setIsResaleSubmitting] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
+  const [activeQrTicket, setActiveQrTicket] = useState(null);
 
   useEffect(() => {
     if (openLoginTrigger > 0) {
@@ -690,6 +691,9 @@ export default function Header({
               position: relative;
               overflow: hidden;
               transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+            }
+            .my-events-modal-carrier {
+              max-width: 720px !important;
             }
 
             /* Khung chứa vé auth */
@@ -1715,8 +1719,8 @@ export default function Header({
 
             /* ── My Events Modal Enhancement ── */
             .my-evt-card {
-              background: linear-gradient(135deg, rgba(30, 25, 55, 0.45) 0%, rgba(15, 12, 28, 0.65) 100%);
-              border: 1px solid rgba(255, 255, 255, 0.06);
+              background: var(--bg-dark-gray);
+              border: 1px solid var(--glass-border);
               border-radius: 12px;
               padding: 16px;
               display: flex;
@@ -1724,26 +1728,24 @@ export default function Header({
               position: relative;
               overflow: hidden;
               transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-              box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+              box-shadow: var(--glass-shadow);
               backdrop-filter: blur(12px);
               -webkit-backdrop-filter: blur(12px);
             }
             .my-evt-card:hover {
               transform: translateY(-2px);
-              border-color: rgba(167, 139, 250, 0.4);
+              border-color: var(--brand-cyan);
               box-shadow: 
-                0 10px 25px rgba(167, 139, 250, 0.08),
-                0 0 15px rgba(167, 139, 250, 0.03),
-                inset 0 1px 0 rgba(255, 255, 255, 0.05);
-              background: linear-gradient(135deg, rgba(35, 30, 65, 0.55) 0%, rgba(20, 16, 36, 0.75) 100%);
+                0 10px 25px rgba(0, 242, 254, 0.08),
+                0 0 15px rgba(0, 242, 254, 0.03);
             }
             .my-evt-img {
               width: 72px;
               height: 96px;
               object-fit: cover;
               border-radius: 8px;
-              border: 1px solid rgba(255, 255, 255, 0.08);
-              box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+              border: 1px solid var(--glass-border);
+              box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
               transition: transform 0.3s ease;
             }
             .my-evt-card:hover .my-evt-img {
@@ -1757,10 +1759,10 @@ export default function Header({
               justify-content: space-between;
             }
             .my-evt-title {
-              font-size: 14px;
-              font-weight: 700;
-              color: #ffffff;
-              margin: 6px 0 4px 0;
+              font-size: 15px;
+              font-weight: 800;
+              color: var(--brand-pearl);
+              margin: 4px 0 6px 0;
               overflow: hidden;
               text-overflow: ellipsis;
               white-space: nowrap;
@@ -1768,85 +1770,86 @@ export default function Header({
               letter-spacing: 0.02em;
             }
             .my-evt-meta {
-              font-size: 11px;
-              color: rgba(255, 255, 255, 0.5);
+              font-size: 11.5px;
+              color: var(--text-secondary);
               display: flex;
               align-items: center;
-              gap: 4px;
-              margin-bottom: 2px;
+              gap: 6px;
+              margin-bottom: 3px;
               font-family: var(--font-body);
+              opacity: 0.9;
             }
             .my-evt-price {
-              font-size: 11px;
+              font-size: 12px;
               color: var(--brand-cyan);
-              font-weight: 600;
-              margin-top: 2px;
+              font-weight: 750;
+              margin-top: 4px;
               font-family: var(--font-mono);
             }
             .my-evt-actions {
               display: flex;
               gap: 8px;
-              margin-top: 8px;
+              margin-top: 10px;
               z-index: 5;
             }
             .my-evt-btn {
-              padding: 5px 10px;
+              padding: 6px 12px;
               border-radius: 6px;
               font-size: 11px;
-              font-weight: 600;
+              font-weight: 700;
               cursor: pointer;
               transition: all 0.2s ease;
               display: flex;
               align-items: center;
-              gap: 4px;
+              gap: 6px;
               font-family: var(--font-mono);
               text-transform: uppercase;
               letter-spacing: 0.05em;
               border: none;
             }
             .my-evt-btn-view {
-              background: rgba(255, 255, 255, 0.04);
-              color: rgba(255, 255, 255, 0.75);
-              border: 1px solid rgba(255, 255, 255, 0.08);
+              background: var(--brand-navy-glow);
+              color: var(--brand-cyan);
+              border: 1px solid var(--brand-cyan-glow);
             }
             .my-evt-btn-view:hover {
-              background: rgba(255, 255, 255, 0.08);
-              color: #ffffff;
-              border-color: rgba(255, 255, 255, 0.2);
+              background: var(--brand-cyan-glow);
+              border-color: var(--brand-cyan);
+              box-shadow: 0 0 10px rgba(0, 242, 254, 0.15);
             }
             .my-evt-btn-edit {
-              background: rgba(251, 191, 36, 0.06);
-              color: #fbbf24;
-              border: 1px solid rgba(251, 191, 36, 0.15);
+              background: rgba(251, 191, 36, 0.08);
+              color: var(--brand-gold);
+              border: 1px solid rgba(251, 191, 36, 0.2);
             }
             .my-evt-btn-edit:hover {
-              background: rgba(251, 191, 36, 0.12);
-              color: #ffca3a;
-              border-color: rgba(251, 191, 36, 0.4);
-              box-shadow: 0 0 10px rgba(251, 191, 36, 0.08);
+              background: rgba(251, 191, 36, 0.15);
+              border-color: var(--brand-gold);
+              box-shadow: 0 0 10px rgba(253, 218, 13, 0.12);
             }
 
             /* Detail Modal */
             .detail-modal-carrier {
-              max-width: 500px !important;
+              max-width: 720px !important;
+              width: 90% !important;
             }
             .detail-hero-banner {
               width: 100%;
-              height: 180px;
+              height: 160px;
               object-fit: cover;
-              border-radius: 8px;
-              border: 1px solid rgba(255, 255, 255, 0.08);
-              margin-bottom: 14px;
-              box-shadow: 0 6px 15px rgba(0, 0, 0, 0.4);
+              border-radius: 12px;
+              border: 1px solid var(--glass-border);
+              margin-bottom: 18px;
+              box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
             }
             .detail-field-group {
               display: flex;
               flex-direction: column;
-              gap: 4px;
-              background: rgba(255, 255, 255, 0.02);
-              border: 1px solid rgba(255, 255, 255, 0.04);
-              border-radius: 8px;
-              padding: 10px 12px;
+              gap: 6px;
+              background: var(--bg-dark-gray);
+              border: 1px solid var(--glass-border);
+              border-radius: 10px;
+              padding: 14px 16px;
             }
             .detail-field-label {
               font-family: var(--font-mono);
@@ -1857,12 +1860,12 @@ export default function Header({
             }
             .detail-field-value {
               font-size: 13px;
-              color: #ffffff;
+              color: var(--brand-pearl);
               font-weight: 500;
             }
           `}</style>
 
-          <div className={`edm-modal-carrier ${modalType === 'login' ? 'auth-modal-carrier' : ''} ${(modalType === 'create' || modalType === 'edit-event') ? 'create-modal-carrier' : ''} ${modalType === 'view-event-detail' ? 'detail-modal-carrier' : ''}`}>
+          <div className={`edm-modal-carrier ${modalType === 'login' ? 'auth-modal-carrier' : ''} ${(modalType === 'create' || modalType === 'edit-event') ? 'create-modal-carrier' : ''} ${modalType === 'view-event-detail' ? 'detail-modal-carrier' : ''} ${modalType === 'my-events' ? 'my-events-modal-carrier' : ''}`}>
             {modalType !== 'login' && (
               <button 
                 onClick={() => {
@@ -2294,12 +2297,12 @@ export default function Header({
               </p>
 
               <div className="wallet-tickets-container" style={{
-                maxHeight: '340px',
+                maxHeight: '560px',
                 overflowY: 'auto',
                 display: 'flex',
                 flexDirection: 'column',
                 gap: '14px',
-                paddingRight: '6px',
+                padding: '8px 6px 8px 2px',
                 zIndex: 2,
                 position: 'relative'
               }}>
@@ -2352,7 +2355,7 @@ export default function Header({
                               fontFamily: 'var(--font-mono)',
                               color: 'var(--text-muted)'
                             }}>
-                              {event.id.toUpperCase()}
+                              {(event.id || '').toUpperCase()}
                             </span>
                           </div>
 
@@ -2410,7 +2413,7 @@ export default function Header({
                 </div>
 
                 <div className="wallet-tickets-container" style={{
-                  maxHeight: '380px',
+                  maxHeight: '420px',
                   overflowY: 'auto',
                   paddingRight: '6px',
                   zIndex: 2,
@@ -2436,11 +2439,11 @@ export default function Header({
                       {viewingEvent.category}
                     </span>
                     <span style={{ fontSize: '9px', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>
-                      ID: {viewingEvent.id.toUpperCase()}
+                      ID: {(viewingEvent.id || '').toUpperCase()}
                     </span>
                   </div>
 
-                  <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#fff', margin: '4px 0', fontFamily: 'var(--font-display)', lineHeight: 1.3 }}>
+                  <h3 style={{ fontSize: '24px', fontWeight: 800, color: 'var(--brand-pearl)', margin: '8px 0', fontFamily: 'var(--font-display)', lineHeight: 1.3 }}>
                     {viewingEvent.title}
                   </h3>
 
@@ -2475,8 +2478,8 @@ export default function Header({
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '4px' }}>
                         {viewingEvent.zones.map((zone, idx) => (
                           <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', paddingBottom: '4px', borderBottom: idx < viewingEvent.zones.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}>
-                            <span style={{ fontWeight: 700, color: '#fff' }}>{zone.name}</span>
-                            <span style={{ color: 'rgba(255,255,255,0.6)' }}>
+                            <span style={{ fontWeight: 700, color: 'var(--brand-pearl)' }}>{zone.name}</span>
+                            <span style={{ color: 'var(--text-muted)' }}>
                               {zone.price.toLocaleString('vi-VN')} đ • <span style={{ color: 'var(--brand-cyan)' }}>{zone.availableTickets} vé</span>
                             </span>
                           </div>
@@ -2484,16 +2487,16 @@ export default function Header({
                       </div>
                     </div>
                   )}
+                 </div>
 
-                  <button 
-                    onClick={() => startEditEvent(viewingEvent)} 
-                    className="edm-btn-action" 
-                    style={{ marginTop: '10px' }}
-                  >
-                    CHỈNH SỬA SỰ KIỆN NÀY
-                  </button>
-                </div>
-              </>}
+                <button 
+                  onClick={() => startEditEvent(viewingEvent)} 
+                  className="edm-btn-action" 
+                  style={{ marginTop: '14px', zIndex: 10, position: 'relative' }}
+                >
+                  CHỈNH SỬA SỰ KIỆN NÀY
+                </button>
+              </>)}
 
             {modalType === 'tickets' && !currentUser && (
               <>
@@ -2529,7 +2532,7 @@ export default function Header({
                   display: 'flex',
                   flexDirection: 'column',
                   gap: '14px',
-                  paddingRight: '6px',
+                  padding: '8px 6px 8px 2px',
                   zIndex: 2,
                   position: 'relative'
                 }}>
@@ -2598,29 +2601,35 @@ export default function Header({
                             </p>
 
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto' }}>
-                              <span style={{ fontSize: '11px', color: '#fff', fontWeight: 600 }}>
+                              <span style={{ fontSize: '11px', color: theme === 'light' ? 'var(--brand-pearl)' : '#fff', fontWeight: 600 }}>
                                 {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(ticket.price)}
                               </span>
 
                               <div style={{ display: 'flex', gap: '8px' }}>
                                 <button
-                                  onClick={async () => {
-                                    await showAlert(`MÃ CHECK-IN QR CODE:\n${ticket.qrCode}\n\nSự kiện: ${ticket.eventTitle}\nPhân khu: ${ticket.zoneName}\nGhế: ${ticket.seatNumber || 'Vé đứng (GA)'}`);
+                                  onClick={() => {
+                                    setActiveQrTicket(ticket);
                                   }}
                                   style={{
-                                    background: 'rgba(255,255,255,0.04)',
-                                    border: '1px solid rgba(255,255,255,0.08)',
+                                    background: theme === 'light' ? 'rgba(15, 23, 42, 0.04)' : 'rgba(255,255,255,0.04)',
+                                    border: theme === 'light' ? '1px solid rgba(15, 23, 42, 0.08)' : '1px solid rgba(255,255,255,0.08)',
                                     borderRadius: '6px',
                                     padding: '4px 10px',
-                                    color: '#fff',
+                                    color: theme === 'light' ? 'var(--text-secondary)' : '#fff',
                                     fontSize: '10px',
                                     fontWeight: 600,
                                     fontFamily: 'var(--font-mono)',
                                     cursor: 'pointer',
                                     transition: 'all 0.2s ease'
                                   }}
-                                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}
-                                  onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.04)'}
+                                  onMouseEnter={e => {
+                                    e.currentTarget.style.background = theme === 'light' ? 'rgba(15, 23, 42, 0.08)' : 'rgba(255,255,255,0.08)';
+                                    e.currentTarget.style.color = theme === 'light' ? 'var(--brand-pearl)' : '#fff';
+                                  }}
+                                  onMouseLeave={e => {
+                                    e.currentTarget.style.background = theme === 'light' ? 'rgba(15, 23, 42, 0.04)' : 'rgba(255,255,255,0.04)';
+                                    e.currentTarget.style.color = theme === 'light' ? 'var(--text-secondary)' : '#fff';
+                                  }}
                                 >
                                   QR CODE
                                 </button>
@@ -2633,7 +2642,7 @@ export default function Header({
                                       border: '1px solid rgba(245, 158, 11, 0.25)',
                                       borderRadius: '6px',
                                       padding: '4px 10px',
-                                      color: 'oklch(75% 0.14 70)',
+                                      color: theme === 'light' ? 'oklch(45% 0.14 70)' : 'oklch(75% 0.14 70)',
                                       fontSize: '10px',
                                       fontWeight: 600,
                                       fontFamily: 'var(--font-mono)',
@@ -2998,7 +3007,7 @@ export default function Header({
           onClick={(e) => { if (e.target === e.currentTarget) { setResaleTicketPending(null); setResalePriceInput(''); } }}
           style={{
             position: 'fixed', inset: 0,
-            backgroundColor: 'rgba(5, 4, 10, 0.92)',
+            backgroundColor: theme === 'light' ? 'rgba(226, 232, 240, 0.75)' : 'rgba(5, 4, 10, 0.92)',
             backdropFilter: 'blur(24px)',
             WebkitBackdropFilter: 'blur(24px)',
             zIndex: 2000,
@@ -3008,11 +3017,15 @@ export default function Header({
           <div className="resale-price-modal-card" style={{
             width: '92%',
             maxWidth: '460px',
-            background: 'linear-gradient(160deg, rgba(38, 30, 64, 0.98) 0%, rgba(22, 16, 42, 0.99) 100%)',
-            border: '1px solid rgba(245, 158, 11, 0.3)',
+            background: theme === 'light' 
+              ? 'linear-gradient(135deg, rgba(255, 255, 255, 0.99) 0%, rgba(245, 247, 250, 0.98) 100%)' 
+              : 'linear-gradient(160deg, rgba(38, 30, 64, 0.98) 0%, rgba(22, 16, 42, 0.99) 100%)',
+            border: theme === 'light' ? '1px solid rgba(245, 158, 11, 0.2)' : '1px solid rgba(245, 158, 11, 0.3)',
             borderRadius: '20px',
             padding: '36px 36px 30px 36px',
-            boxShadow: '0 30px 80px rgba(0,0,0,0.95), 0 0 50px rgba(245,158,11,0.06), inset 0 1px 1.5px rgba(255,255,255,0.05)',
+            boxShadow: theme === 'light' 
+              ? '0 20px 48px rgba(15, 23, 42, 0.08), 0 0 30px rgba(245, 158, 11, 0.02)' 
+              : '0 30px 80px rgba(0,0,0,0.95), 0 0 50px rgba(245,158,11,0.06), inset 0 1px 1.5px rgba(255,255,255,0.05)',
             position: 'relative',
             overflow: 'hidden'
           }}>
@@ -3026,16 +3039,22 @@ export default function Header({
               onClick={() => { setResaleTicketPending(null); setResalePriceInput(''); }}
               style={{
                 position: 'absolute', top: '18px', right: '18px',
-                background: 'rgba(255,255,255,0.04)',
-                border: '1px solid rgba(255,255,255,0.08)',
+                background: theme === 'light' ? 'rgba(15, 23, 42, 0.04)' : 'rgba(255,255,255,0.04)',
+                border: theme === 'light' ? '1px solid rgba(15, 23, 42, 0.06)' : '1px solid rgba(255,255,255,0.08)',
                 borderRadius: '50%',
                 width: '30px', height: '30px',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 color: 'var(--text-muted)', cursor: 'pointer', transition: 'all 0.2s ease',
                 zIndex: 10
               }}
-              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = '#fff'; }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.color = 'var(--text-muted)'; }}
+              onMouseEnter={e => { 
+                e.currentTarget.style.background = theme === 'light' ? 'rgba(15, 23, 42, 0.08)' : 'rgba(255,255,255,0.1)'; 
+                e.currentTarget.style.color = theme === 'light' ? 'var(--brand-pearl)' : '#fff'; 
+              }}
+              onMouseLeave={e => { 
+                e.currentTarget.style.background = theme === 'light' ? 'rgba(15, 23, 42, 0.04)' : 'rgba(255,255,255,0.04)'; 
+                e.currentTarget.style.color = 'var(--text-muted)'; 
+              }}
             >
               <X size={13} />
             </button>
@@ -3043,7 +3062,7 @@ export default function Header({
             <div style={{ zIndex: 2, position: 'relative' }}>
               <span style={{
                 fontFamily: 'var(--font-mono)', fontSize: '8.5px',
-                letterSpacing: '0.14em', color: 'oklch(75% 0.14 70)',
+                letterSpacing: '0.14em', color: theme === 'light' ? 'oklch(45% 0.14 70)' : 'oklch(75% 0.14 70)',
                 fontWeight: 700, textTransform: 'uppercase', opacity: 0.9,
                 display: 'block', marginBottom: '6px'
               }}>
@@ -3052,18 +3071,18 @@ export default function Header({
 
               <h3 style={{
                 fontFamily: 'var(--font-display)', fontSize: '22px',
-                fontWeight: 800, color: '#fff',
+                fontWeight: 800, color: theme === 'light' ? 'var(--brand-pearl)' : '#fff',
                 margin: '0 0 6px 0',
-                textShadow: '0 0 20px rgba(245,158,11,0.25)'
+                textShadow: theme === 'light' ? 'none' : '0 0 20px rgba(245,158,11,0.25)'
               }}>
                 Nhập Giá Bán Lại
               </h3>
 
-              <p style={{ fontSize: '12.5px', color: 'var(--text-muted)', margin: '0 0 22px 0', lineHeight: 1.6 }}>
-                Vé: <strong style={{ color: '#fff' }}>{resaleTicketPending.eventTitle}</strong>
-                {resaleTicketPending.seatNumber && <> · Ghế <strong style={{ color: '#fff' }}>{resaleTicketPending.seatNumber}</strong></>}
+              <p style={{ fontSize: '12.5px', color: theme === 'light' ? 'var(--text-secondary)' : 'var(--text-muted)', margin: '0 0 22px 0', lineHeight: 1.6 }}>
+                Vé: <strong style={{ color: theme === 'light' ? 'var(--brand-pearl)' : '#fff' }}>{resaleTicketPending.eventTitle}</strong>
+                {resaleTicketPending.seatNumber && <> · Ghế <strong style={{ color: theme === 'light' ? 'var(--brand-pearl)' : '#fff' }}>{resaleTicketPending.seatNumber}</strong></>}
                 <br />
-                Giá gốc: <strong style={{ color: 'oklch(70% 0.18 300)' }}>
+                Giá gốc: <strong style={{ color: theme === 'light' ? 'oklch(50% 0.22 300)' : 'oklch(70% 0.18 300)' }}>
                   {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(resaleTicketPending.price)}
                 </strong>
               </p>
@@ -3071,7 +3090,7 @@ export default function Header({
               <div style={{ marginBottom: '8px' }}>
                 <label style={{
                   display: 'block', fontSize: '11px', fontWeight: 600,
-                  color: 'oklch(75% 0.14 70)', fontFamily: 'var(--font-mono)',
+                  color: theme === 'light' ? 'oklch(45% 0.14 70)' : 'oklch(75% 0.14 70)', fontFamily: 'var(--font-mono)',
                   letterSpacing: '0.06em', textTransform: 'uppercase',
                   marginBottom: '10px'
                 }}>
@@ -3089,11 +3108,11 @@ export default function Header({
                     style={{
                       width: '100%',
                       height: '48px',
-                      background: 'rgba(255,255,255,0.04)',
-                      border: '1px solid rgba(245,158,11,0.35)',
+                      background: theme === 'light' ? 'rgba(15, 23, 42, 0.02)' : 'rgba(255,255,255,0.04)',
+                      border: theme === 'light' ? '1px solid rgba(245, 158, 11, 0.25)' : '1px solid rgba(245, 158, 11, 0.35)',
                       borderRadius: '10px',
                       padding: '0 16px',
-                      color: '#fff',
+                      color: theme === 'light' ? 'var(--brand-pearl)' : '#fff',
                       fontSize: '18px',
                       fontWeight: 700,
                       fontFamily: 'var(--font-mono)',
@@ -3104,12 +3123,12 @@ export default function Header({
                     }}
                     onFocus={e => {
                       e.currentTarget.style.borderColor = 'rgba(245,158,11,0.7)';
-                      e.currentTarget.style.background = 'rgba(255,255,255,0.06)';
+                      e.currentTarget.style.background = theme === 'light' ? 'rgba(15, 23, 42, 0.04)' : 'rgba(255,255,255,0.06)';
                       e.currentTarget.style.boxShadow = '0 0 0 3px rgba(245,158,11,0.1)';
                     }}
                     onBlur={e => {
-                      e.currentTarget.style.borderColor = 'rgba(245,158,11,0.35)';
-                      e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
+                      e.currentTarget.style.borderColor = theme === 'light' ? 'rgba(245, 158, 11, 0.25)' : 'rgba(245,158,11,0.35)';
+                      e.currentTarget.style.background = theme === 'light' ? 'rgba(15, 23, 42, 0.02)' : 'rgba(255,255,255,0.04)';
                       e.currentTarget.style.boxShadow = '0 0 0 0 rgba(245,158,11,0)';
                     }}
                   />
@@ -3119,16 +3138,23 @@ export default function Header({
                   {[1.0, 0.9, 0.85, 0.75].map(ratio => {
                     const quickPrice = Math.round(resaleTicketPending.price * ratio);
                     const label = ratio === 1.0 ? 'Giá gốc' : ratio === 0.85 ? 'Gợi ý (−15%)' : ratio === 0.9 ? '−10%' : '−25%';
+                    const isSelected = String(quickPrice) === String(resalePriceInput);
                     return (
                       <button
                         key={ratio}
                         onClick={() => setResalePriceInput(String(quickPrice))}
                         style={{
-                          background: String(quickPrice) === String(resalePriceInput) ? 'rgba(245,158,11,0.18)' : 'rgba(255,255,255,0.04)',
-                          border: String(quickPrice) === String(resalePriceInput) ? '1px solid rgba(245,158,11,0.45)' : '1px solid rgba(255,255,255,0.08)',
+                          background: isSelected 
+                            ? 'rgba(245,158,11,0.18)' 
+                            : (theme === 'light' ? 'rgba(15, 23, 42, 0.04)' : 'rgba(255,255,255,0.04)'),
+                          border: isSelected 
+                            ? '1px solid rgba(245,158,11,0.45)' 
+                            : (theme === 'light' ? '1px solid rgba(15, 23, 42, 0.08)' : '1px solid rgba(255,255,255,0.08)'),
                           borderRadius: '6px',
                           padding: '5px 10px',
-                          color: String(quickPrice) === String(resalePriceInput) ? 'oklch(75% 0.14 70)' : 'var(--text-muted)',
+                          color: isSelected 
+                            ? (theme === 'light' ? 'oklch(45% 0.14 70)' : 'oklch(75% 0.14 70)') 
+                            : (theme === 'light' ? 'var(--text-secondary)' : 'var(--text-muted)'),
                           fontSize: '10px',
                           fontWeight: 600,
                           fontFamily: 'var(--font-mono)',
@@ -3152,17 +3178,23 @@ export default function Header({
                   onClick={() => { setResaleTicketPending(null); setResalePriceInput(''); }}
                   style={{
                     flex: 1, height: '44px',
-                    background: 'rgba(255,255,255,0.04)',
-                    border: '1px solid rgba(255,255,255,0.08)',
+                    background: theme === 'light' ? 'rgba(15, 23, 42, 0.04)' : 'rgba(255,255,255,0.04)',
+                    border: theme === 'light' ? '1px solid rgba(15, 23, 42, 0.08)' : '1px solid rgba(255,255,255,0.08)',
                     borderRadius: '10px',
-                    color: 'var(--text-muted)',
+                    color: theme === 'light' ? 'var(--text-secondary)' : 'var(--text-muted)',
                     fontSize: '12px', fontWeight: 600,
                     fontFamily: 'var(--font-mono)',
                     cursor: 'pointer', transition: 'all 0.2s ease',
                     letterSpacing: '0.04em'
                   }}
-                  onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = '#fff'; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.color = 'var(--text-muted)'; }}
+                  onMouseEnter={e => { 
+                    e.currentTarget.style.background = theme === 'light' ? 'rgba(15, 23, 42, 0.08)' : 'rgba(255,255,255,0.08)'; 
+                    e.currentTarget.style.color = theme === 'light' ? 'var(--brand-pearl)' : '#fff'; 
+                  }}
+                  onMouseLeave={e => { 
+                    e.currentTarget.style.background = theme === 'light' ? 'rgba(15, 23, 42, 0.04)' : 'rgba(255,255,255,0.04)'; 
+                    e.currentTarget.style.color = theme === 'light' ? 'var(--text-secondary)' : 'var(--text-muted)'; 
+                  }}
                 >
                   HỦY
                 </button>
@@ -3183,10 +3215,18 @@ export default function Header({
                     cursor: isResaleSubmitting ? 'not-allowed' : 'pointer',
                     transition: 'all 0.25s ease',
                     letterSpacing: '0.06em',
-                    boxShadow: isResaleSubmitting ? 'none' : '0 4px 20px rgba(245,158,11,0.3)'
+                    boxShadow: isResaleSubmitting ? 'none' : (theme === 'light' ? '0 4px 12px rgba(245,158,11,0.2)' : '0 4px 20px rgba(245,158,11,0.3)')
                   }}
-                  onMouseEnter={e => { if (!isResaleSubmitting) { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 6px 28px rgba(245,158,11,0.45)'; } }}
-                  onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = isResaleSubmitting ? 'none' : '0 4px 20px rgba(245,158,11,0.3)'; }}
+                  onMouseEnter={e => { 
+                    if (!isResaleSubmitting) { 
+                      e.currentTarget.style.transform = 'translateY(-1px)'; 
+                      e.currentTarget.style.boxShadow = theme === 'light' ? '0 6px 18px rgba(245,158,11,0.35)' : '0 6px 28px rgba(245,158,11,0.45)'; 
+                    } 
+                  }}
+                  onMouseLeave={e => { 
+                    e.currentTarget.style.transform = 'translateY(0)'; 
+                    e.currentTarget.style.boxShadow = isResaleSubmitting ? 'none' : (theme === 'light' ? '0 4px 12px rgba(245,158,11,0.2)' : '0 4px 20px rgba(245,158,11,0.3)'); 
+                  }}
                 >
                   {isResaleSubmitting ? 'ĐANG ĐĂNG...' : '✦ ĐĂNG BÁN NGAY'}
                 </button>
@@ -3195,6 +3235,185 @@ export default function Header({
           </div>
         </div>
       )}
+
+      {activeQrTicket && (() => {
+        const qrData = JSON.stringify({
+          ticketId: activeQrTicket.id,
+          eventTitle: activeQrTicket.eventTitle,
+          zone: activeQrTicket.zoneName,
+          seat: activeQrTicket.seatNumber || 'GA'
+        });
+        const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&color=0b0b0f&bgcolor=ffffff&data=${encodeURIComponent(qrData)}`;
+
+        return (
+          <div
+            className="modal-overlay-scrollable"
+            onClick={(e) => { if (e.target === e.currentTarget) setActiveQrTicket(null); }}
+            style={{
+              position: 'fixed', inset: 0,
+              backgroundColor: theme === 'light' ? 'rgba(226, 232, 240, 0.75)' : 'rgba(5, 4, 10, 0.92)',
+              backdropFilter: 'blur(24px)',
+              WebkitBackdropFilter: 'blur(24px)',
+              zIndex: 2100,
+              display: 'flex', alignItems: 'center', justifyContent: 'center'
+            }}
+          >
+            <div className="resale-price-modal-card" style={{
+              width: '92%',
+              maxWidth: '420px',
+              background: theme === 'light' 
+                ? 'linear-gradient(135deg, rgba(255, 255, 255, 0.99) 0%, rgba(245, 247, 250, 0.98) 100%)' 
+                : 'linear-gradient(160deg, rgba(38, 30, 64, 0.98) 0%, rgba(22, 16, 42, 0.99) 100%)',
+              border: theme === 'light' ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid rgba(255, 255, 255, 0.08)',
+              borderRadius: '24px',
+              padding: '36px 32px 32px 32px',
+              boxShadow: theme === 'light' 
+                ? '0 20px 48px rgba(15, 23, 42, 0.08)' 
+                : '0 30px 80px rgba(0,0,0,0.95)',
+              position: 'relative',
+              textAlign: 'center',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '20px'
+            }}>
+              <button
+                onClick={() => setActiveQrTicket(null)}
+                style={{
+                  position: 'absolute', top: '18px', right: '18px',
+                  background: theme === 'light' ? 'rgba(15, 23, 42, 0.04)' : 'rgba(255,255,255,0.04)',
+                  border: theme === 'light' ? '1px solid rgba(15, 23, 42, 0.06)' : '1px solid rgba(255,255,255,0.08)',
+                  borderRadius: '50%',
+                  width: '30px', height: '30px',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  color: 'var(--text-muted)', cursor: 'pointer', transition: 'all 0.2s ease',
+                  zIndex: 10
+                }}
+                onMouseEnter={e => { 
+                  e.currentTarget.style.background = theme === 'light' ? 'rgba(15, 23, 42, 0.08)' : 'rgba(255,255,255,0.1)'; 
+                  e.currentTarget.style.color = theme === 'light' ? 'var(--brand-pearl)' : '#fff'; 
+                }}
+                onMouseLeave={e => { 
+                  e.currentTarget.style.background = theme === 'light' ? 'rgba(15, 23, 42, 0.04)' : 'rgba(255,255,255,0.04)'; 
+                  e.currentTarget.style.color = 'var(--text-muted)'; 
+                }}
+              >
+                <X size={13} />
+              </button>
+
+              <div style={{ width: '100%' }}>
+                <span style={{
+                  fontFamily: 'var(--font-mono)', fontSize: '8.5px',
+                  letterSpacing: '0.14em', color: 'var(--brand-cyan)',
+                  fontWeight: 700, textTransform: 'uppercase',
+                  display: 'block', marginBottom: '6px'
+                }}>
+                  ✦ Vé Điện Tử · E-Ticket
+                </span>
+                <h3 style={{
+                  fontFamily: 'var(--font-display)', fontSize: '20px',
+                  fontWeight: 800, color: theme === 'light' ? 'var(--brand-pearl)' : '#fff',
+                  margin: 0
+                }}>
+                  Mã Check-in Vé
+                </h3>
+              </div>
+
+              {/* QR Image Frame */}
+              <div style={{
+                padding: '16px',
+                backgroundColor: '#fff',
+                borderRadius: '16px',
+                boxShadow: theme === 'light' ? '0 10px 30px rgba(15,23,42,0.06)' : '0 12px 36px rgba(0,0,0,0.6)',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '8px'
+              }}>
+                <img 
+                  src={qrCodeUrl} 
+                  alt="Check-in QR" 
+                  style={{ width: '180px', height: '180px' }}
+                />
+                <span style={{ 
+                  fontSize: '9.5px', 
+                  fontFamily: 'var(--font-mono)', 
+                  fontWeight: 700, 
+                  color: '#0b0b0f', 
+                  borderTop: '1px dashed #ddd', 
+                  width: '100%', 
+                  textAlign: 'center', 
+                  paddingTop: '6px', 
+                  letterSpacing: '0.08em' 
+                }}>
+                  {activeQrTicket.id.toUpperCase()}
+                </span>
+              </div>
+
+              {/* Ticket Details */}
+              <div style={{
+                width: '100%',
+                backgroundColor: theme === 'light' ? 'rgba(15, 23, 42, 0.02)' : 'rgba(255, 255, 255, 0.01)',
+                border: theme === 'light' ? '1px solid rgba(15, 23, 42, 0.06)' : '1px solid rgba(255, 255, 255, 0.04)',
+                borderRadius: '12px',
+                padding: '16px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '8px',
+                fontSize: '13px',
+                textAlign: 'left'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: 'var(--text-muted)' }}>Sự kiện:</span>
+                  <span style={{ fontWeight: 700, color: theme === 'light' ? 'var(--brand-pearl)' : '#fff', maxWidth: '240px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {activeQrTicket.eventTitle}
+                  </span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: 'var(--text-muted)' }}>Khu vực:</span>
+                  <span style={{ fontWeight: 600, color: theme === 'light' ? 'var(--brand-pearl)' : '#fff' }}>
+                    {activeQrTicket.zoneName}
+                  </span>
+                </div>
+                {activeQrTicket.seatNumber && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: 'var(--text-muted)' }}>Vị trí ghế:</span>
+                    <span style={{ fontWeight: 700, color: 'var(--brand-cyan)', fontFamily: 'var(--font-mono)' }}>
+                      {activeQrTicket.seatNumber}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              <button
+                onClick={() => setActiveQrTicket(null)}
+                style={{
+                  width: '100%', height: '44px',
+                  background: 'linear-gradient(135deg, var(--brand-violet) 0%, oklch(48% 0.25 300) 100%)',
+                  border: '1px solid rgba(167, 139, 250, 0.25)',
+                  borderRadius: '10px',
+                  color: '#fff',
+                  fontSize: '13px', fontWeight: 600,
+                  fontFamily: 'var(--font-mono)',
+                  cursor: 'pointer', transition: 'all 0.25s ease',
+                  letterSpacing: '0.04em',
+                  boxShadow: '0 4px 12px rgba(139, 92, 246, 0.15)'
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.background = 'linear-gradient(135deg, oklch(60% 0.25 300) 0%, var(--brand-cyan) 100%)';
+                  e.currentTarget.style.boxShadow = '0 6px 16px rgba(6, 182, 212, 0.2)';
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.background = 'linear-gradient(135deg, var(--brand-violet) 0%, oklch(48% 0.25 300) 100%)';
+                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(139, 92, 246, 0.15)';
+                }}
+              >
+                XÁC NHẬN
+              </button>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Hamburger Drawer — mobile/tablet menu */}
       {isMenuOpen && (

@@ -63,7 +63,15 @@ export const updateUserRole = async (req, res) => {
   try {
     const user = await User.findByPk(req.params.id);
     if (!user) return res.status(404).json({ error: 'Không tìm thấy người dùng' });
-    user.role = user.role === 'admin' ? 'client' : 'admin';
+    
+    if (user.role === 'client') {
+      user.role = 'organizer';
+    } else if (user.role === 'organizer') {
+      user.role = 'admin';
+    } else {
+      user.role = 'client';
+    }
+    
     await user.save();
     res.json({
       id: user.id,
