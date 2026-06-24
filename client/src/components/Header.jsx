@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Search, ShoppingBag, Ticket, ChevronDown, Plus, X, Globe, Calendar, Users, Menu, Sun, Moon, Mail, Lock, User, ImagePlus, Loader, Eye, Pencil, MapPin } from 'lucide-react';
 
 const SECTION_LED = {
@@ -97,6 +98,7 @@ export default function Header({
   const [isImgUploading, setIsImgUploading] = useState(false);
   const imgInputRef = useRef(null);
   const timeInputRef = useRef(null);
+  const [timePickerPosition, setTimePickerPosition] = useState({ top: 0, left: 0 });
   const [myEvents, setMyEvents] = useState([]);
   const [loadingMyEvents, setLoadingMyEvents] = useState(false);
   const [editingEvent, setEditingEvent] = useState(null);
@@ -169,6 +171,16 @@ export default function Header({
       fetchMyEvents();
     }
   }, [modalType]);
+
+  useEffect(() => {
+    if (showTimePicker && timeInputRef.current) {
+      const rect = timeInputRef.current.getBoundingClientRect();
+      setTimePickerPosition({
+        top: rect.bottom + window.scrollY + 6,
+        left: rect.left + window.scrollX
+      });
+    }
+  }, [showTimePicker]);
 
   const handleImgUpload = async (e) => {
     const file = e.target.files[0];
@@ -2093,18 +2105,18 @@ export default function Header({
                       <span style={{ fontSize: '10px', opacity: 0.5 }}>▼</span>
                     </div>
 
-                    {showTimePicker && (
+                    {showTimePicker && createPortal(
                       <>
-                        <div 
+                        <div
                           onClick={() => setShowTimePicker(false)}
-                          style={{ position: 'fixed', inset: 0, zIndex: 1504 }}
+                          style={{ position: 'fixed', inset: 0, zIndex: 9998 }}
                         />
                         <div
                           className="custom-time-picker-panel"
                           style={{
                             position: 'fixed',
-                            top: timeInputRef.current ? timeInputRef.current.getBoundingClientRect().bottom + window.scrollY + 6 : window.scrollY + 100,
-                            left: timeInputRef.current ? timeInputRef.current.getBoundingClientRect().left + window.scrollX : window.scrollX + 100,
+                            top: timeInputRef.current ? timeInputRef.current.getBoundingClientRect().bottom + 6 : 200,
+                            left: timeInputRef.current ? timeInputRef.current.getBoundingClientRect().left : 100,
                             width: '180px',
                             height: '180px',
                             background: 'linear-gradient(160deg, rgba(38, 30, 64, 0.98) 0%, rgba(22, 16, 42, 0.99) 100%)',
@@ -2112,7 +2124,7 @@ export default function Header({
                             borderRadius: '12px',
                             boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
                             display: 'flex',
-                            zIndex: 1505,
+                            zIndex: 9999,
                             overflow: 'hidden',
                             padding: '8px',
                             boxSizing: 'border-box'
@@ -2178,7 +2190,7 @@ export default function Header({
                             })}
                           </div>
                         </div>
-                      </>
+                      </>, document.body
                     )}
                   </div>
                 </div>
