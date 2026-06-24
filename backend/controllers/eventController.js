@@ -92,21 +92,21 @@ export const updateEvent = async (req, res) => {
     if (!event) return res.status(404).json({ error: 'Không tìm thấy sự kiện' });
 
     await event.update({
-      title,
-      description,
-      category,
-      date,
-      time,
-      location,
-      priceRange,
-      image,
-      badge,
-      theme,
-      isFeatured: isFeatured ?? false,
-      isTrending: isTrending ?? false,
-      creatorId: creatorId || null,
-      organizerId: organizerId || null,
-      status: status || event.status
+      title: title !== undefined ? title : event.title,
+      description: description !== undefined ? description : event.description,
+      category: category !== undefined ? category : event.category,
+      date: date !== undefined ? date : event.date,
+      time: time !== undefined ? time : event.time,
+      location: location !== undefined ? location : event.location,
+      priceRange: priceRange !== undefined ? priceRange : event.priceRange,
+      image: image !== undefined ? image : event.image,
+      badge: badge !== undefined ? badge : event.badge,
+      theme: theme !== undefined ? theme : event.theme,
+      isFeatured: isFeatured !== undefined ? isFeatured : event.isFeatured,
+      isTrending: isTrending !== undefined ? isTrending : event.isTrending,
+      creatorId: creatorId !== undefined ? creatorId : event.creatorId,
+      organizerId: organizerId !== undefined ? organizerId : event.organizerId,
+      status: status !== undefined ? status : event.status
     }, { transaction: t });
 
     if (zones) {
