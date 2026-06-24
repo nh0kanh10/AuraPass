@@ -2961,10 +2961,19 @@ export default function AdminDashboard({
                     </button>
                     <button 
                       type="submit" 
+                      disabled={loadingSaveEvent || loadingSaveCreator}
                       className="btn-primary" 
-                      style={{ padding: '10px 24px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                      style={{ padding: '10px 24px', borderRadius: '8px', cursor: (loadingSaveEvent || loadingSaveCreator) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px', opacity: (loadingSaveEvent || loadingSaveCreator) ? 0.7 : 1 }}
                     >
-                      <Save size={14} /> Lưu Lại
+                      {(loadingSaveEvent || loadingSaveCreator) ? (
+                        <>
+                          <RefreshCw size={14} spin /> Đang lưu...
+                        </>
+                      ) : (
+                        <>
+                          <Save size={14} /> Lưu Lại
+                        </>
+                      )}
                     </button>
                   </div>
                 </form>
@@ -3820,10 +3829,19 @@ export default function AdminDashboard({
                     </button>
                     <button 
                       type="submit" 
+                      disabled={loadingSaveEvent || loadingSaveCreator}
                       className="btn-primary" 
-                      style={{ padding: '10px 24px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                      style={{ padding: '10px 24px', borderRadius: '8px', cursor: (loadingSaveEvent || loadingSaveCreator) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px', opacity: (loadingSaveEvent || loadingSaveCreator) ? 0.7 : 1 }}
                     >
-                      <Save size={14} /> Lưu Lại
+                      {(loadingSaveEvent || loadingSaveCreator) ? (
+                        <>
+                          <RefreshCw size={14} spin /> Đang lưu...
+                        </>
+                      ) : (
+                        <>
+                          <Save size={14} /> Lưu Lại
+                        </>
+                      )}
                     </button>
                   </div>
                 </form>
@@ -3865,6 +3883,7 @@ export default function AdminDashboard({
                     options={[
                       { value: 'all', label: 'Tất cả vai trò' },
                       { value: 'client', label: 'Khách hàng (Client)' },
+                      { value: 'organizer', label: 'Ban tổ chức (Organizer)' },
                       { value: 'admin', label: 'Quản trị viên (Admin)' }
                     ]}
                   />
