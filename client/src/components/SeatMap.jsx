@@ -95,6 +95,8 @@ export default function SeatMap({ event, onBack, onProceedCheckout, showAlert })
   const totalPrice = ticketCount * selectedZone.price;
 
 
+  const isVipZone = (zone) => zone && zone.name && /vip/i.test(zone.name);
+
   const formatPrice = (price) => {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(price);
   };
