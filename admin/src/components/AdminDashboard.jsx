@@ -2787,7 +2787,7 @@ export default function AdminDashboard({
                   <div className="admin-form-group">
                     <label className="admin-form-label">Loại Sự Kiện</label>
                     <div style={{ display: 'flex', gap: '10px' }}>
-                      {[{ val: 'live', label: '🎤 Trực tiếp' }, { val: 'online', label: '💻 Trực tuyến' }].map(opt => (
+                      {[{ val: 'live', label: '🎤 Trực tiếp' }, { val: 'online', label: '💻 Trực tuyến' }, { val: 'workshop', label: '🪑 Workshop' }].map(opt => (
                         <button
                           key={opt.val}
                           type="button"

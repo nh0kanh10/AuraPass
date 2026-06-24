@@ -23,6 +23,7 @@ export default function SeatMap({ event, onBack, onProceedCheckout, showAlert })
   const [standingCount, setStandingCount] = useState(0);
   const [takenSeats, setTakenSeats] = useState([]);
   const [loadingTakenSeats, setLoadingTakenSeats] = useState(false);
+  const [allZoneTakenSeats, setAllZoneTakenSeats] = useState({});
 
 
   useEffect(() => {
@@ -52,6 +53,23 @@ export default function SeatMap({ event, onBack, onProceedCheckout, showAlert })
 
     fetchTakenSeats();
   }, [selectedZone]);
+
+  // Prefetch taken seats for all zones when workshop type
+  useEffect(() => {
+    if (event.eventType !== 'workshop') return;
+    (async () => {
+      const results = {};
+      await Promise.all(
+        (event.zones || []).filter(z => !z.isStanding).map(async zone => {
+          try {
+            const r = await fetch(`http://localhost:5000/api/bookings/taken-seats?zoneId=${zone.id}`);
+            if (r.ok) results[zone.id] = await r.json();
+          } catch {}
+        })
+      );
+      setAllZoneTakenSeats(results);
+    })();
+  }, []);
 
   const isSeatTaken = (zoneId, rowIdx, seatNum) => {
     if (selectedZone.isStanding) return false;
@@ -90,6 +108,22 @@ export default function SeatMap({ event, onBack, onProceedCheckout, showAlert })
     }
   };
 
+  const handleWorkshopSeatToggle = (zone, seatId) => {
+    if (selectedZone?.id !== zone.id) {
+      setSelectedZone(zone);
+      setSelectedSeats([seatId]);
+      return;
+    }
+    if (selectedSeats.includes(seatId)) {
+      setSelectedSeats(selectedSeats.filter(s => s !== seatId));
+    } else {
+      if (selectedSeats.length >= 6) {
+        showAlert('Bạn chỉ được đặt tối đa 6 ghế trong một lượt giao dịch.');
+        return;
+      }
+      setSelectedSeats([...selectedSeats, seatId]);
+    }
+  };
 
   const ticketCount = selectedZone.isStanding ? standingCount : selectedSeats.length;
   const totalPrice = ticketCount * selectedZone.price;
@@ -220,6 +254,216 @@ export default function SeatMap({ event, onBack, onProceedCheckout, showAlert })
           >
             TIẾN HÀNH THANH TOÁN →
           </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Workshop event: table floor plan ──
+  if (event.eventType === 'workshop') {
+    const wsSeated = selectedZone && !selectedZone.isStanding;
+    const wsCount = wsSeated ? selectedSeats.length : standingCount;
+    const wsTotal = wsCount * (selectedZone?.price || 0);
+
+    const getZoneCapacity = (zone) => {
+      const orig = (event.zones || []).find(z => z.id === zone.id);
+      if (!orig) return zone.availableTickets || 8;
+      if (orig.rows > 0 && orig.cols > 0) return orig.rows * orig.cols;
+      const taken = allZoneTakenSeats[zone.id] || [];
+      return (orig.availableTickets || 0) + taken.length;
+    };
+
+    const renderTable = (zone) => {
+      const taken = allZoneTakenSeats[zone.id] || [];
+      const totalChairs = Math.max(1, Math.min(getZoneCapacity(zone), 14));
+      const CONT = 172;
+      const TABLE_R = 38;
+      const ORBIT = 66;
+      const CH_R = 12;
+      const isZoneSel = selectedZone?.id === zone.id;
+
+      return (
+        <div key={zone.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
+          <div style={{ position: 'relative', width: CONT, height: CONT }}>
+            {/* Table surface */}
+            <div style={{
+              position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
+              width: TABLE_R * 2, height: TABLE_R * 2, borderRadius: '50%',
+              background: isZoneSel ? 'rgba(0,255,255,0.08)' : 'var(--glass-bg)',
+              border: `2px solid ${isZoneSel ? 'var(--brand-cyan)' : 'rgba(255,255,255,0.15)'}`,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              flexDirection: 'column', textAlign: 'center', padding: '4px', zIndex: 1, boxSizing: 'border-box'
+            }}>
+              <span style={{ fontSize: '9px', fontFamily: 'var(--font-mono)', color: isZoneSel ? 'var(--brand-cyan)' : 'var(--text-muted)', lineHeight: 1.3 }}>
+                {zone.name}
+              </span>
+              <span style={{ fontSize: '8px', color: isZoneSel ? 'rgba(0,255,255,0.7)' : 'var(--text-muted)', marginTop: '2px' }}>
+                {formatPrice(zone.price)}
+              </span>
+            </div>
+
+            {/* Chairs around the table */}
+            {Array.from({ length: totalChairs }, (_, i) => {
+              const angle = (i / totalChairs) * 2 * Math.PI - Math.PI / 2;
+              const cx = CONT / 2 + Math.cos(angle) * ORBIT - CH_R;
+              const cy = CONT / 2 + Math.sin(angle) * ORBIT - CH_R;
+              const seatId = `${i + 1}`;
+              const isTaken = taken.includes(seatId);
+              const isSel = isZoneSel && selectedSeats.includes(seatId);
+              return (
+                <div key={i}
+                  onClick={() => { if (!isTaken) handleWorkshopSeatToggle(zone, seatId); }}
+                  title={isTaken ? 'Đã đặt' : `Ghế ${i + 1}`}
+                  style={{
+                    position: 'absolute', left: cx, top: cy,
+                    width: CH_R * 2, height: CH_R * 2, borderRadius: '50%',
+                    background: isTaken ? 'rgba(239,68,68,0.2)' : isSel ? 'var(--brand-cyan)' : 'rgba(255,255,255,0.08)',
+                    border: `1.5px solid ${isTaken ? 'rgba(239,68,68,0.5)' : isSel ? 'var(--brand-cyan)' : 'rgba(255,255,255,0.18)'}`,
+                    cursor: isTaken ? 'not-allowed' : 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: '7px', fontFamily: 'var(--font-mono)',
+                    color: isTaken ? 'rgba(239,68,68,0.5)' : isSel ? '#000' : 'var(--text-muted)',
+                    transition: 'all 0.15s'
+                  }}
+                >{i + 1}</div>
+              );
+            })}
+          </div>
+
+          <div style={{ fontSize: '11px', fontWeight: 600, color: isZoneSel ? 'var(--brand-cyan)' : 'var(--text-primary)', textAlign: 'center', maxWidth: '120px', lineHeight: 1.3 }}>
+            {zone.name}
+          </div>
+          <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>{zone.availableTickets} ghế còn</div>
+        </div>
+      );
+    };
+
+    const seatedZones = normalizedZones.filter(z => !z.isStanding);
+    const standingZones = normalizedZones.filter(z => z.isStanding);
+
+    return (
+      <div className="seatmap-outer-wrapper" style={{ padding: '28px 16px 120px', display: 'flex', flexDirection: 'column', gap: '0' }}>
+
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', marginBottom: '20px' }}>
+          <button onClick={onBack}
+            style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: '12px', fontFamily: 'var(--font-mono)', padding: '4px 0', flexShrink: 0 }}>
+            <ArrowLeft size={14} /> QUAY LẠI
+          </button>
+          <div>
+            <div style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)' }}>{event.title}</div>
+            <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>
+              {event.date}{event.time ? ` · ${event.time}` : ''}{event.location ? ` · ${event.location}` : ''}
+            </div>
+          </div>
+        </div>
+
+        {/* Legend */}
+        <div style={{ display: 'flex', gap: '18px', justifyContent: 'center', marginBottom: '20px', flexWrap: 'wrap' }}>
+          {[
+            { bg: 'rgba(255,255,255,0.08)', bd: 'rgba(255,255,255,0.18)', label: 'Còn trống' },
+            { bg: 'var(--brand-cyan)', bd: 'var(--brand-cyan)', label: 'Đang chọn' },
+            { bg: 'rgba(239,68,68,0.2)', bd: 'rgba(239,68,68,0.5)', label: 'Đã đặt' }
+          ].map(item => (
+            <div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <div style={{ width: 13, height: 13, borderRadius: '50%', background: item.bg, border: `1.5px solid ${item.bd}`, flexShrink: 0 }} />
+              <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{item.label}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Stage / Screen bar */}
+        <div style={{ margin: '0 auto 28px', width: '55%', maxWidth: '360px', padding: '9px 16px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '8px', textAlign: 'center', fontSize: '11px', fontFamily: 'var(--font-mono)', letterSpacing: '0.1em', color: 'var(--text-muted)' }}>
+          SÂN KHẤU / MÀN HÌNH
+        </div>
+
+        {/* Tables grid */}
+        {seatedZones.length > 0 && (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', justifyContent: 'center', marginBottom: '28px' }}>
+            {seatedZones.map(zone => renderTable(zone))}
+          </div>
+        )}
+
+        {/* Standing / GA zones */}
+        {standingZones.length > 0 && (
+          <div style={{ marginBottom: '24px' }}>
+            <div style={{ fontSize: '10px', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', textAlign: 'center', letterSpacing: '0.1em', marginBottom: '12px' }}>
+              KHU VỰC ĐỨNG / GENERAL ADMISSION
+            </div>
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
+              {standingZones.map(zone => (
+                <button key={zone.id}
+                  onClick={() => { setSelectedZone(zone); setSelectedSeats([]); setStandingCount(0); }}
+                  style={{
+                    padding: '12px 18px', borderRadius: '10px', cursor: 'pointer',
+                    border: `1px solid ${selectedZone?.id === zone.id ? 'var(--brand-cyan)' : 'rgba(255,255,255,0.12)'}`,
+                    background: selectedZone?.id === zone.id ? 'rgba(0,255,255,0.06)' : 'rgba(255,255,255,0.02)',
+                    textAlign: 'center', transition: 'all 0.2s'
+                  }}>
+                  <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>{zone.name}</div>
+                  <div style={{ fontSize: '12px', color: 'var(--brand-cyan)', fontFamily: 'var(--font-mono)', marginTop: '2px' }}>{formatPrice(zone.price)}</div>
+                  <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '4px' }}>{zone.availableTickets} còn lại</div>
+                </button>
+              ))}
+            </div>
+
+            {selectedZone?.isStanding && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', justifyContent: 'center', marginTop: '16px' }}>
+                <button onClick={handleStandingDecrement}
+                  style={{ width: 34, height: 34, borderRadius: '8px', border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.04)', color: 'var(--text-primary)', fontSize: '18px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>−</button>
+                <span style={{ fontSize: '22px', fontWeight: 700, fontFamily: 'var(--font-mono)', color: 'var(--text-primary)', minWidth: '28px', textAlign: 'center' }}>{standingCount}</span>
+                <button onClick={handleStandingIncrement}
+                  style={{ width: 34, height: 34, borderRadius: '8px', border: '1px solid var(--brand-cyan)', background: 'rgba(0,255,255,0.08)', color: 'var(--brand-cyan)', fontSize: '18px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>+</button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Sticky bottom summary + proceed */}
+        <div style={{
+          position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 50,
+          background: 'var(--bg-primary)', borderTop: '1px solid rgba(255,255,255,0.08)',
+          padding: '14px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap'
+        }}>
+          <div>
+            {wsCount > 0 ? (
+              <>
+                <div style={{ fontSize: '13px', color: 'var(--text-primary)', fontWeight: 600 }}>
+                  {wsSeated
+                    ? `${wsCount} ghế — ${selectedZone?.name}`
+                    : `${wsCount} vé — ${selectedZone?.name}`}
+                </div>
+                <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                  {wsSeated
+                    ? selectedSeats.map(s => `Ghế ${s}`).join(', ')
+                    : `${wsCount} × ${formatPrice(selectedZone?.price || 0)}`}
+                </div>
+              </>
+            ) : (
+              <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Chọn ghế để đặt vé</div>
+            )}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            {wsCount > 0 && (
+              <div style={{ fontSize: '18px', fontWeight: 700, color: 'var(--brand-cyan)', fontFamily: 'var(--font-mono)' }}>{formatPrice(wsTotal)}</div>
+            )}
+            <button
+              onClick={() => {
+                if (wsCount === 0) { showAlert('Vui lòng chọn ít nhất 1 ghế'); return; }
+                onProceedCheckout({ event, zone: selectedZone, count: wsCount, seats: wsSeated ? selectedSeats : [], totalPrice: wsTotal });
+              }}
+              disabled={wsCount === 0}
+              style={{
+                padding: '11px 22px', borderRadius: '10px', border: 'none',
+                background: wsCount > 0 ? 'linear-gradient(135deg, var(--brand-cyan), var(--brand-emerald))' : 'rgba(255,255,255,0.08)',
+                color: wsCount > 0 ? '#000' : 'var(--text-muted)',
+                fontSize: '13px', fontWeight: 700, fontFamily: 'var(--font-mono)', letterSpacing: '0.06em',
+                cursor: wsCount > 0 ? 'pointer' : 'default', whiteSpace: 'nowrap'
+              }}
+            >
+              TIẾN HÀNH →
+            </button>
+          </div>
         </div>
       </div>
     );

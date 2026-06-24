@@ -2256,7 +2256,7 @@ export default function Header({
                 <div className="edm-input-group">
                   <label className="edm-input-label">Loại sự kiện</label>
                   <div style={{ display: 'flex', gap: '8px' }}>
-                    {[{ val: 'live', label: '🎤 Trực tiếp' }, { val: 'online', label: '💻 Trực tuyến' }].map(opt => (
+                    {[{ val: 'live', label: '🎤 Trực tiếp' }, { val: 'online', label: '💻 Trực tuyến' }, { val: 'workshop', label: '🪑 Workshop' }].map(opt => (
                       <button key={opt.val} type="button" onClick={() => setEvtEventType(opt.val)} style={{
                         flex: 1, padding: '9px', borderRadius: '8px', cursor: 'pointer', fontSize: '13px',
                         fontFamily: 'var(--font-body)', fontWeight: evtEventType === opt.val ? 600 : 400,

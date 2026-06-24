@@ -862,7 +862,8 @@ export default function AccountPage({
                 <div style={{ display: 'flex', gap: '8px' }}>
                   {[
                     { val: 'live', label: '🎤 Trực tiếp' },
-                    { val: 'online', label: '💻 Trực tuyến' }
+                    { val: 'online', label: '💻 Trực tuyến' },
+                    { val: 'workshop', label: '🪑 Workshop' }
                   ].map(opt => (
                     <button
                       key={opt.val}
