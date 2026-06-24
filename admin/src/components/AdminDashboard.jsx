@@ -3,7 +3,7 @@ import {
   LayoutDashboard, Calendar, Ticket, User, Users, PlusCircle, Trash2, 
   Edit, Check, X, RefreshCw, BarChart2, DollarSign, Package, Activity, 
   ArrowLeft, MapPin, Tag, Armchair, ChevronRight, Save, ShieldAlert, Key,
-  CheckSquare, UserPlus
+  CheckSquare, UserPlus, Sun, Moon
 } from 'lucide-react';
 
 function CustomSelect({ label, value, onChange, options, placeholder = '-- Chọn --', small = false }) {
@@ -378,7 +378,9 @@ export default function AdminDashboard({
   events: initialEvents, 
   tickets: initialTickets, 
   onUpdateEvents,
-  onUpdateTickets 
+  onUpdateTickets,
+  theme,
+  setTheme
 }) {
   const [activeTab, setActiveTab] = useState('analytics');
   const [events, setEvents] = useState([]);
@@ -500,6 +502,7 @@ export default function AdminDashboard({
   const [creatorSort, setCreatorSort] = useState('name-asc');
   const [creatorPage, setCreatorPage] = useState(1);
   const [creatorLimit, setCreatorLimit] = useState(5);
+  const [expiryMinutes, setExpiryMinutes] = useState(30);
 
   const totalRevenue = bookings
     .filter(b => b.paymentStatus === 'Paid')
@@ -512,6 +515,9 @@ export default function AdminDashboard({
   const formatPrice = (price) => {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(price);
   };
+
+  const getElapsedMinutes = (createdAt) =>
+    Math.floor((Date.now() - new Date(createdAt).getTime()) / 60000);
 
   const fetchAllData = async () => {
     try {
@@ -958,6 +964,33 @@ export default function AdminDashboard({
     }
   };
 
+  const handleCancelExpiredBookings = async () => {
+    const expiredCount = bookings.filter(b =>
+      b.paymentStatus !== 'Paid' &&
+      (Date.now() - new Date(b.createdAt).getTime()) > expiryMinutes * 60 * 1000
+    ).length;
+    if (expiredCount === 0) {
+      await showAlert(`Không có đơn nào chưa thanh toán quá ${expiryMinutes} phút.`);
+      return;
+    }
+    const confirmed = await showConfirm(`Hủy ${expiredCount} đơn CHƯA THANH TOÁN quá ${expiryMinutes} phút? Ghế sẽ được trả lại.`);
+    if (!confirmed) return;
+    try {
+      const res = await fetch('http://localhost:5000/api/admin/bookings/expire', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ expiryMinutes })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || `Lỗi server ${res.status}`);
+      const { cancelled } = data;
+      await showAlert(`Đã hủy ${cancelled} đơn quá hạn. Ghế đã được trả lại.`);
+      await fetchAllData();
+    } catch (err) {
+      await showAlert('Lỗi: ' + err.message);
+    }
+  };
+
   const handleToggleResaleStatus = async (ticketId) => {
     try {
       const res = await fetch(`http://localhost:5000/api/admin/resale/${ticketId}/status`, {
@@ -1189,10 +1222,10 @@ export default function AdminDashboard({
     <section className="glass-panel admin-global-wrapper" style={{ margin: '0 0 48px 0', padding: '32px', textAlign: 'left', minHeight: '92vh' }}>
       <style>{`
         .admin-global-wrapper {
-          background: rgba(18, 14, 32, 0.45) !important;
-          border: 1px solid rgba(255, 255, 255, 0.06) !important;
+          background: var(--admin-global-bg, rgba(18, 14, 32, 0.45)) !important;
+          border: 1px solid var(--admin-global-border, rgba(255, 255, 255, 0.06)) !important;
           backdrop-filter: blur(24px);
-          box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+          box-shadow: var(--admin-global-shadow, 0 20px 50px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.08)) !important;
         }
 
         .admin-layout {
@@ -1207,8 +1240,8 @@ export default function AdminDashboard({
           display: flex;
           flex-direction: column;
           gap: 10px;
-          background: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.015) 100%);
-          border: 1px solid rgba(255, 255, 255, 0.08);
+          background: var(--glass-bg);
+          border: 1px solid var(--glass-border);
           border-radius: 16px;
           padding: 20px 14px;
           backdrop-filter: blur(20px);
@@ -1238,13 +1271,13 @@ export default function AdminDashboard({
         }
 
         .admin-sidebar-btn:hover {
-          color: #fff;
-          background: rgba(255, 255, 255, 0.03);
-          border-color: rgba(255, 255, 255, 0.05);
+          color: var(--text-white);
+          background: rgba(139, 92, 246, 0.08);
+          border-color: rgba(139, 92, 246, 0.15);
         }
 
         .admin-sidebar-btn.active {
-          color: #fff;
+          color: var(--text-white);
           background: linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(6, 182, 212, 0.05) 100%);
           border-color: rgba(139, 92, 246, 0.3);
           box-shadow: 0 4px 15px rgba(139, 92, 246, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.05);
@@ -1274,8 +1307,8 @@ export default function AdminDashboard({
 
         .kpi-card {
           position: relative;
-          background: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%);
-          border: 1px solid rgba(255, 255, 255, 0.08);
+          background: var(--glass-bg);
+          border: 1px solid var(--glass-border);
           border-radius: 16px;
           padding: 22px 24px;
           display: flex;
@@ -1315,16 +1348,16 @@ export default function AdminDashboard({
           background: var(--brand-gold);
         }
         .kpi-card.kpi-events::before {
-          background: #fff;
+          background: var(--text-white);
         }
         .kpi-card.kpi-resale::before {
           background: oklch(70% 0.18 300);
         }
 
         .kpi-card:hover {
-          border-color: rgba(255, 255, 255, 0.18);
+          border-color: var(--glass-border-hover);
           transform: translateY(-4px);
-          box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
+          box-shadow: var(--glass-shadow);
         }
 
         .kpi-card.kpi-revenue:hover {
@@ -1338,8 +1371,8 @@ export default function AdminDashboard({
         }
 
         .kpi-card.kpi-events:hover {
-          border-color: rgba(255, 255, 255, 0.25);
-          box-shadow: 0 12px 30px rgba(255, 255, 255, 0.06);
+          border-color: var(--glass-border-hover);
+          box-shadow: var(--glass-shadow);
         }
 
         .kpi-card.kpi-resale:hover {
@@ -1355,6 +1388,7 @@ export default function AdminDashboard({
           display: block;
           margin-top: 4px;
           line-height: 1.2;
+          color: var(--text-white);
         }
 
         .kpi-icon-wrapper {
@@ -1382,9 +1416,9 @@ export default function AdminDashboard({
           box-shadow: 0 0 15px rgba(253, 218, 13, 0.1);
         }
         .kpi-card.kpi-events .kpi-icon-wrapper {
-          background: rgba(255, 255, 255, 0.04);
-          color: #fff;
-          border-color: rgba(255, 255, 255, 0.08);
+          background: var(--glass-bg);
+          color: var(--text-white);
+          border-color: var(--glass-border);
           box-shadow: 0 0 15px rgba(255, 255, 255, 0.05);
         }
         .kpi-card.kpi-resale .kpi-icon-wrapper {
@@ -1408,8 +1442,8 @@ export default function AdminDashboard({
         }
 
         .bento-panel {
-          background: rgba(255, 255, 255, 0.015);
-          border: 1px solid rgba(255, 255, 255, 0.06);
+          background: var(--glass-bg);
+          border: 1px solid var(--glass-border);
           border-radius: 16px;
           padding: 24px;
           backdrop-filter: blur(12px);
@@ -1421,13 +1455,13 @@ export default function AdminDashboard({
           align-items: center;
           gap: 14px;
           padding: 12px;
-          background: rgba(255, 255, 255, 0.01);
-          border: 1px solid rgba(255, 255, 255, 0.03);
+          background: var(--glass-bg);
+          border: 1px solid var(--glass-border);
           border-radius: 10px;
           transition: all 0.25s ease;
         }
         .bento-event-row:hover {
-          background: rgba(255, 255, 255, 0.025);
+          background: rgba(139, 92, 246, 0.05);
           border-color: rgba(139, 92, 246, 0.2);
           transform: translateX(4px);
         }
@@ -1436,7 +1470,7 @@ export default function AdminDashboard({
           height: 48px;
           object-fit: cover;
           border-radius: 8px;
-          border: 1px solid rgba(255, 255, 255, 0.08);
+          border: 1px solid var(--glass-border);
           flex-shrink: 0;
         }
         .bento-event-info {
@@ -1454,7 +1488,7 @@ export default function AdminDashboard({
         }
         .bento-event-title {
           font-weight: 600;
-          color: #fff;
+          color: var(--text-white);
           font-size: 13.5px;
           white-space: nowrap;
           overflow: hidden;
@@ -1468,7 +1502,7 @@ export default function AdminDashboard({
         }
         .bento-progress-wrapper {
           height: 8px;
-          background: rgba(255, 255, 255, 0.06);
+          background: rgba(139, 92, 246, 0.1);
           border-radius: 4px;
           overflow: hidden;
           position: relative;
@@ -1494,7 +1528,7 @@ export default function AdminDashboard({
           flex-direction: column;
           gap: 12px;
           margin-top: 24px;
-          border-top: 1px solid rgba(255, 255, 255, 0.06);
+          border-top: 1px solid var(--glass-border);
           padding-top: 16px;
         }
 
@@ -1530,8 +1564,8 @@ export default function AdminDashboard({
         .admin-table-wrapper {
           width: 100%;
           overflow-x: auto;
-          background: rgba(255, 255, 255, 0.005);
-          border: 1px solid rgba(255, 255, 255, 0.05);
+          background: var(--glass-bg);
+          border: 1px solid var(--glass-border);
           border-radius: 12px;
         }
 
@@ -1543,12 +1577,12 @@ export default function AdminDashboard({
         }
 
         .admin-table th {
-          background: rgba(255, 255, 255, 0.02);
+          background: rgba(139, 92, 246, 0.05);
           padding: 14px 18px;
           font-family: var(--font-display);
           font-weight: 700;
           color: var(--text-white);
-          border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+          border-bottom: 1px solid var(--glass-border);
           font-size: 12.5px;
           text-transform: uppercase;
           letter-spacing: 0.5px;
@@ -1556,18 +1590,18 @@ export default function AdminDashboard({
 
         .admin-table td {
           padding: 16px 18px;
-          border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+          border-bottom: 1px solid var(--glass-border);
           color: var(--text-secondary);
         }
 
         .admin-table tr:hover td {
-          background: rgba(255, 255, 255, 0.015);
-          color: #fff;
+          background: rgba(139, 92, 246, 0.04);
+          color: var(--text-white);
         }
 
         .action-icon-btn {
           background: transparent;
-          border: 1px solid rgba(255, 255, 255, 0.08);
+          border: 1px solid var(--glass-border);
           color: var(--text-muted);
           width: 32px;
           height: 32px;
@@ -1580,9 +1614,9 @@ export default function AdminDashboard({
         }
 
         .action-icon-btn:hover {
-          color: #fff;
-          background: rgba(255, 255, 255, 0.05);
-          border-color: rgba(255, 255, 255, 0.15);
+          color: var(--text-white);
+          background: rgba(139, 92, 246, 0.1);
+          border-color: var(--glass-border-hover);
         }
 
         .action-icon-btn.btn-delete:hover {
@@ -1627,9 +1661,9 @@ export default function AdminDashboard({
         }
 
         .admin-status-badge.client {
-          background: rgba(255, 255, 255, 0.05);
+          background: rgba(128, 128, 128, 0.1);
           color: var(--text-muted);
-          border: 1px solid rgba(255, 255, 255, 0.12);
+          border: 1px solid var(--glass-border);
         }
 
         .admin-form-group {
@@ -1648,11 +1682,11 @@ export default function AdminDashboard({
         .admin-form-input,
         .admin-form-textarea,
         .admin-form-select {
-          background: rgba(255, 255, 255, 0.02);
-          border: 1px solid rgba(255, 255, 255, 0.08);
+          background: var(--admin-input-bg, rgba(255, 255, 255, 0.02));
+          border: 1px solid var(--admin-input-border, rgba(255, 255, 255, 0.08));
           border-radius: 8px;
           padding: 10px 14px;
-          color: #fff;
+          color: var(--admin-input-color, #fff);
           font-size: 13.5px;
           outline: none;
           transition: all 0.3s ease;
@@ -1668,8 +1702,8 @@ export default function AdminDashboard({
         .admin-form-input:focus,
         .admin-form-textarea:focus,
         .admin-form-select:focus {
-          border-color: rgba(167, 139, 250, 0.45);
-          background: rgba(255, 255, 255, 0.04);
+          border-color: var(--brand-violet, rgba(167, 139, 250, 0.45));
+          background: var(--admin-input-bg-focus, rgba(255, 255, 255, 0.04));
         }
 
         .admin-custom-picker-container {
@@ -1685,13 +1719,13 @@ export default function AdminDashboard({
           top: calc(100% + 6px);
           left: 0;
           width: 280px;
-          background: rgba(18, 14, 32, 0.95);
+          background: var(--admin-dropdown-bg, rgba(18, 14, 32, 0.95));
           backdrop-filter: blur(20px);
-          border: 1px solid rgba(167, 139, 250, 0.2);
+          border: 1px solid var(--admin-dropdown-border, rgba(167, 139, 250, 0.2));
           border-radius: 12px;
           padding: 16px;
           z-index: 1000;
-          box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5), 0 0 15px rgba(167, 139, 250, 0.15);
+          box-shadow: var(--admin-dropdown-shadow, 0 10px 25px rgba(0, 0, 0, 0.5));
         }
 
         .datepicker-header {
@@ -1702,9 +1736,9 @@ export default function AdminDashboard({
         }
 
         .datepicker-nav-btn {
-          background: rgba(255, 255, 255, 0.05);
-          border: 1px solid rgba(255, 255, 255, 0.1);
-          color: #fff;
+          background: var(--admin-input-bg, rgba(255, 255, 255, 0.05));
+          border: 1px solid var(--admin-input-border, rgba(255, 255, 255, 0.1));
+          color: var(--text-white, #fff);
           width: 28px;
           height: 28px;
           border-radius: 6px;
@@ -1723,7 +1757,7 @@ export default function AdminDashboard({
         .datepicker-month-year {
           font-size: 13.5px;
           font-weight: 600;
-          color: #fff;
+          color: var(--text-white, #fff);
         }
 
         .datepicker-weekdays {
@@ -1755,7 +1789,7 @@ export default function AdminDashboard({
           aspect-ratio: 1;
           background: transparent;
           border: none;
-          color: #fff;
+          color: var(--text-white, #fff);
           font-size: 12.5px;
           border-radius: 6px;
           cursor: pointer;
@@ -1766,7 +1800,7 @@ export default function AdminDashboard({
         }
 
         .datepicker-day-btn:hover {
-          background: rgba(255, 255, 255, 0.08);
+          background: rgba(139, 92, 246, 0.1);
         }
 
         .datepicker-day-btn.today {
@@ -1786,13 +1820,13 @@ export default function AdminDashboard({
           top: calc(100% + 6px);
           left: 0;
           width: 220px;
-          background: rgba(18, 14, 32, 0.95);
+          background: var(--admin-dropdown-bg, rgba(18, 14, 32, 0.95));
           backdrop-filter: blur(20px);
-          border: 1px solid rgba(167, 139, 250, 0.2);
+          border: 1px solid var(--admin-dropdown-border, rgba(167, 139, 250, 0.2));
           border-radius: 12px;
           padding: 12px;
           z-index: 1000;
-          box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5), 0 0 15px rgba(167, 139, 250, 0.15);
+          box-shadow: var(--admin-dropdown-shadow, 0 10px 25px rgba(0, 0, 0, 0.5));
         }
 
         .timepicker-columns {
@@ -1814,7 +1848,7 @@ export default function AdminDashboard({
           font-weight: 600;
           color: var(--text-muted);
           text-transform: uppercase;
-          border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+          border-bottom: 1px solid var(--glass-border);
           padding-bottom: 4px;
         }
 
@@ -1836,7 +1870,7 @@ export default function AdminDashboard({
         }
 
         .timepicker-column-list::-webkit-scrollbar-thumb {
-          background: rgba(255, 255, 255, 0.1);
+          background: rgba(139, 92, 246, 0.2);
           border-radius: 2px;
         }
 
@@ -1847,7 +1881,7 @@ export default function AdminDashboard({
         .timepicker-item-btn {
           background: transparent;
           border: none;
-          color: rgba(255, 255, 255, 0.7);
+          color: var(--text-secondary);
           font-size: 12.5px;
           padding: 6px 0;
           border-radius: 4px;
@@ -1857,8 +1891,8 @@ export default function AdminDashboard({
         }
 
         .timepicker-item-btn:hover {
-          background: rgba(255, 255, 255, 0.06);
-          color: #fff;
+          background: rgba(139, 92, 246, 0.1);
+          color: var(--text-white);
         }
 
         .timepicker-item-btn.selected {
@@ -1869,7 +1903,7 @@ export default function AdminDashboard({
         }
 
         .timepicker-footer {
-          border-top: 1px solid rgba(255, 255, 255, 0.05);
+          border-top: 1px solid var(--glass-border);
           padding-top: 8px;
           display: flex;
           justify-content: flex-end;
@@ -1904,8 +1938,8 @@ export default function AdminDashboard({
           display: inline-flex;
           align-items: center;
           gap: 8px;
-          background: rgba(255, 255, 255, 0.03);
-          border: 1px dashed rgba(255, 255, 255, 0.12);
+          background: var(--glass-bg);
+          border: 1px dashed var(--glass-border);
           border-radius: 6px;
           padding: 6px 12px;
           font-size: 12px;
@@ -1920,11 +1954,11 @@ export default function AdminDashboard({
         }
 
         .admin-custom-select-trigger {
-          background: rgba(255, 255, 255, 0.02);
-          border: 1px solid rgba(255, 255, 255, 0.08);
+          background: var(--admin-input-bg, rgba(255, 255, 255, 0.02));
+          border: 1px solid var(--admin-input-border, rgba(255, 255, 255, 0.08));
           border-radius: 8px;
           padding: 10px 14px;
-          color: #fff;
+          color: var(--admin-input-color, #fff);
           font-size: 13.5px;
           cursor: pointer;
           display: flex;
@@ -1937,8 +1971,8 @@ export default function AdminDashboard({
 
         .admin-custom-select-trigger:hover,
         .admin-custom-select-trigger.active {
-          border-color: rgba(167, 139, 250, 0.45);
-          background: rgba(255, 255, 255, 0.04);
+          border-color: var(--brand-violet, rgba(167, 139, 250, 0.45));
+          background: var(--admin-input-bg-focus, rgba(255, 255, 255, 0.04));
         }
 
         .select-arrow-icon {
@@ -1948,7 +1982,7 @@ export default function AdminDashboard({
 
         .select-arrow-icon.open {
           transform: rotate(180deg);
-          color: #fff;
+          color: var(--text-white, #fff);
         }
 
         .admin-custom-select-options {
@@ -1956,8 +1990,8 @@ export default function AdminDashboard({
           top: calc(100% + 6px);
           left: 0;
           right: 0;
-          background: rgba(18, 15, 30, 0.98);
-          border: 1px solid rgba(255, 255, 255, 0.12);
+          background: var(--admin-dropdown-bg, rgba(18, 15, 30, 0.98));
+          border: 1px solid var(--admin-dropdown-border, rgba(255, 255, 255, 0.12));
           border-radius: 8px;
           padding: 6px 0;
           margin: 0;
@@ -1965,7 +1999,7 @@ export default function AdminDashboard({
           z-index: 100;
           max-height: 240px;
           overflow-y: auto;
-          box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.7);
+          box-shadow: var(--admin-dropdown-shadow, 0 10px 25px -5px rgba(0, 0, 0, 0.7));
           backdrop-filter: blur(12px);
         }
 
@@ -1979,13 +2013,13 @@ export default function AdminDashboard({
         }
 
         .admin-custom-select-option:hover {
-          background: rgba(139, 92, 246, 0.15);
-          color: #fff;
+          background: var(--admin-option-hover-bg, rgba(139, 92, 246, 0.15));
+          color: var(--admin-option-hover-color, #fff);
         }
 
         .admin-custom-select-option.selected {
-          background: rgba(139, 92, 246, 0.25);
-          color: #fff;
+          background: var(--admin-option-selected-bg, rgba(139, 92, 246, 0.25));
+          color: var(--admin-option-selected-color, #fff);
           font-weight: 600;
         }
 
@@ -1995,10 +2029,15 @@ export default function AdminDashboard({
           gap: 16px;
           align-items: flex-end;
           margin-bottom: 20px;
-          background: rgba(255, 255, 255, 0.01);
-          border: 1px solid rgba(255, 255, 255, 0.04);
+          background: var(--glass-bg);
+          border: 1px solid var(--glass-border);
           border-radius: 12px;
           padding: 16px;
+        }
+
+        .admin-toolbar-row .admin-custom-select-trigger {
+          min-height: 38px;
+          padding: 8px 12px;
         }
 
         .admin-toolbar-item {
@@ -2018,8 +2057,8 @@ export default function AdminDashboard({
           justify-content: space-between;
           align-items: center;
           padding: 16px;
-          background: rgba(255, 255, 255, 0.01);
-          border: 1px solid rgba(255, 255, 255, 0.04);
+          background: var(--glass-bg);
+          border: 1px solid var(--glass-border);
           border-top: none;
           border-radius: 0 0 12px 12px;
           flex-wrap: wrap;
@@ -2038,8 +2077,8 @@ export default function AdminDashboard({
         }
 
         .pagination-btn {
-          background: rgba(255, 255, 255, 0.02);
-          border: 1px solid rgba(255, 255, 255, 0.06);
+          background: var(--glass-bg);
+          border: 1px solid var(--glass-border);
           color: var(--text-secondary);
           width: 32px;
           height: 32px;
@@ -2056,13 +2095,13 @@ export default function AdminDashboard({
         .pagination-btn:hover:not(:disabled) {
           background: rgba(139, 92, 246, 0.15);
           border-color: rgba(139, 92, 246, 0.35);
-          color: #fff;
+          color: var(--text-white);
         }
 
         .pagination-btn.active {
           background: rgba(139, 92, 246, 0.2);
           border-color: rgba(139, 92, 246, 0.45);
-          color: #fff;
+          color: var(--text-white);
         }
 
         .pagination-btn:disabled {
@@ -2079,12 +2118,56 @@ export default function AdminDashboard({
         }
       `}</style>
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255, 255, 255, 0.08)', paddingBottom: '16px', marginBottom: '24px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--glass-border)', paddingBottom: '16px', marginBottom: '24px' }}>
         <div>
-          <h2 style={{ fontSize: '28px', fontFamily: 'var(--font-body)', fontWeight: 800, color: '#fff', margin: 0, letterSpacing: '-0.02em', background: 'linear-gradient(135deg, #ffffff 40%, rgba(255, 255, 255, 0.7) 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+          <h2 style={{ 
+            fontSize: '28px', 
+            fontFamily: 'var(--font-body)', 
+            fontWeight: 800, 
+            color: 'var(--text-white)', 
+            margin: 0, 
+            letterSpacing: '-0.02em', 
+            background: 'var(--title-gradient, linear-gradient(135deg, #ffffff 40%, rgba(255, 255, 255, 0.7) 100%))', 
+            WebkitBackgroundClip: 'text', 
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text'
+          }}>
             AuraPass Control Center
           </h2>
         </div>
+        <button 
+          onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+          className="admin-theme-toggle-btn"
+          style={{
+            background: 'var(--glass-bg)',
+            border: '1px solid var(--glass-border)',
+            color: 'var(--text-white)',
+            cursor: 'pointer',
+            padding: '10px 16px',
+            borderRadius: '8px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            fontSize: '13px',
+            fontWeight: 600,
+            transition: 'all 0.2s ease',
+            boxShadow: 'var(--glass-shadow)',
+            backdropFilter: 'blur(10px)',
+            webkitBackdropFilter: 'blur(10px)'
+          }}
+        >
+          {theme === 'dark' ? (
+            <>
+              <Sun size={15} style={{ color: '#fbbf24' }} />
+              <span>Chế độ sáng</span>
+            </>
+          ) : (
+            <>
+              <Moon size={15} style={{ color: '#8b5cf6' }} />
+              <span>Chế độ tối</span>
+            </>
+          )}
+        </button>
       </div>
 
       <div className="admin-layout">
@@ -2139,13 +2222,7 @@ export default function AdminDashboard({
             <CheckSquare size={16} />
             Duyệt Sự Kiện ({events.filter(e => e.status === 'pending').length})
           </button>
-          <button 
-            className={`admin-sidebar-btn ${activeTab === 'create-organizer' ? 'active' : ''}`}
-            onClick={() => { setActiveTab('create-organizer'); setEditingEventId(null); setEditingCreatorId(null); }}
-          >
-            <UserPlus size={16} />
-            Tạo Tài Khoản BTC
-          </button>
+
         </aside>
 
         <main className="admin-main-content">
@@ -2164,7 +2241,11 @@ export default function AdminDashboard({
                 return sum + evAllocated + evSold;
               }, 0);
 
-              const systemFillPercent = totalCapacity > 0 ? Math.min(Math.round((totalPaidTickets / totalCapacity) * 100), 100) : 0;
+              const paidBookingsCount = bookings.filter(b => b.paymentStatus === 'Paid').length;
+              const pendingBookingsCount = bookings.filter(b => b.paymentStatus !== 'Paid').length;
+              const paymentRate = bookings.length > 0
+                ? Math.round((paidBookingsCount / bookings.length) * 100)
+                : 0;
 
               return (
                 <div>
@@ -2249,50 +2330,37 @@ export default function AdminDashboard({
                       </div>
                     </div>
 
-                    {/* Cột phải: Visual System Capacity Chart */}
+                    {/* Cột phải: Tình trạng Thu Tiền */}
                     <div className="bento-panel" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: '320px' }}>
                       <div>
                         <h3 style={{ fontSize: '15px', fontFamily: 'var(--font-body)', fontWeight: 700, color: '#fff', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <LayoutDashboard size={16} color="var(--brand-gold)" /> Hiệu suất Lấp đầy Hệ thống
+                          <DollarSign size={16} color="var(--brand-emerald)" /> Tình trạng Thu Tiền
                         </h3>
                         <div className="visual-gauge-container">
-                          {/* Radial Gauge SVG */}
                           <svg width="180" height="180" viewBox="0 0 180 180" style={{ transform: 'rotate(-90deg)' }}>
                             <defs>
-                              <linearGradient id="gaugeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                                <stop offset="0%" stopColor="var(--brand-violet)" />
+                              <linearGradient id="paymentGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stopColor="var(--brand-emerald)" />
                                 <stop offset="100%" stopColor="var(--brand-cyan)" />
                               </linearGradient>
                             </defs>
-                            {/* Track circle */}
+                            <circle cx="90" cy="90" r="70" fill="none" stroke="rgba(255, 255, 255, 0.06)" strokeWidth="10" />
                             <circle
-                              cx="90"
-                              cy="90"
-                              r="70"
-                              fill="none"
-                              stroke="rgba(255, 255, 255, 0.03)"
-                              strokeWidth="10"
-                            />
-                            {/* Progress circle */}
-                            <circle
-                              cx="90"
-                              cy="90"
-                              r="70"
-                              fill="none"
-                              stroke="url(#gaugeGradient)"
+                              cx="90" cy="90" r="70" fill="none"
+                              stroke={bookings.length === 0 ? 'rgba(255,255,255,0.06)' : 'url(#paymentGradient)'}
                               strokeWidth="10"
                               strokeDasharray={2 * Math.PI * 70}
-                              strokeDashoffset={2 * Math.PI * 70 * (1 - systemFillPercent / 100)}
+                              strokeDashoffset={2 * Math.PI * 70 * (1 - paymentRate / 100)}
                               strokeLinecap="round"
                               style={{ transition: 'stroke-dashoffset 1.2s cubic-bezier(0.16, 1, 0.3, 1)' }}
                             />
                           </svg>
                           <div style={{ position: 'absolute', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                            <span style={{ fontSize: '32px', fontFamily: 'Outfit', fontWeight: 800, color: '#fff', lineHeight: 1 }}>
-                              {systemFillPercent}%
+                            <span style={{ fontSize: '32px', fontFamily: 'Outfit', fontWeight: 800, color: 'var(--text-white)', lineHeight: 1 }}>
+                              {paymentRate}%
                             </span>
                             <span style={{ fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px', marginTop: '4px' }}>
-                              Lấp Đầy
+                              Đã Thu Tiền
                             </span>
                           </div>
                         </div>
@@ -2300,19 +2368,16 @@ export default function AdminDashboard({
 
                       <div className="visual-stats-list">
                         <div className="visual-stats-item">
-                          <span style={{ color: 'var(--text-muted)' }}>Tổng vé đã bán</span>
-                          <span style={{ fontWeight: 600, color: '#fff' }}>{totalPaidTickets} Vé</span>
+                          <span style={{ color: 'var(--text-muted)' }}>Đã thu tiền</span>
+                          <span style={{ fontWeight: 600, color: 'var(--brand-emerald)' }}>{paidBookingsCount} đơn</span>
                         </div>
                         <div className="visual-stats-item">
-                          <span style={{ color: 'var(--text-muted)' }}>Sức chứa hệ thống</span>
-                          <span style={{ fontWeight: 600, color: '#fff' }}>{totalCapacity} Ghế</span>
+                          <span style={{ color: 'var(--text-muted)' }}>Chưa thu</span>
+                          <span style={{ fontWeight: 600, color: 'var(--brand-gold)' }}>{pendingBookingsCount} đơn</span>
                         </div>
                         <div className="visual-stats-item">
-                          <span style={{ color: 'var(--text-muted)' }}>Trạng thái vận hành</span>
-                          <span style={{ fontWeight: 600, color: 'var(--brand-emerald)', display: 'flex', alignItems: 'center' }}>
-                            <span className="live-pulse-dot" style={{ backgroundColor: 'var(--brand-emerald)', animation: 'pulseGreen 2s infinite' }}></span>
-                            Ổn định
-                          </span>
+                          <span style={{ color: 'var(--text-muted)' }}>Tổng doanh thu</span>
+                          <span style={{ fontWeight: 600, color: 'var(--text-white)' }}>{formatPrice(totalRevenue)}</span>
                         </div>
                       </div>
                     </div>
@@ -2396,7 +2461,7 @@ export default function AdminDashboard({
                             <td>
                               <img src={ev.image} alt={ev.title} style={{ width: '48px', height: '32px', objectFit: 'cover', borderRadius: '4px' }} />
                             </td>
-                            <td style={{ fontWeight: 600, color: '#fff' }}>{ev.title}</td>
+                            <td style={{ fontWeight: 600, color: 'var(--text-white)' }}>{ev.title}</td>
                             <td>
                               {creators.find(c => c.id === ev.creatorId)?.name || <span style={{ opacity: 0.4 }}>Không có</span>}
                             </td>
@@ -2518,8 +2583,8 @@ export default function AdminDashboard({
                   </div>
                 </div>
               ) : (
-                <form onSubmit={handleSaveEvent} className="glass-panel" style={{ padding: '28px', background: 'rgba(0,0,0,0.1)' }}>
-                  <h3 style={{ fontSize: '18px', color: '#fff', fontFamily: 'var(--font-display)', marginBottom: '24px', borderBottom: '1px solid rgba(255, 255, 255, 0.06)', paddingBottom: '12px' }}>
+                <form onSubmit={handleSaveEvent} className="glass-panel" style={{ padding: '28px', background: 'var(--glass-bg)' }}>
+                  <h3 style={{ fontSize: '18px', color: 'var(--text-white)', fontFamily: 'var(--font-display)', marginBottom: '24px', borderBottom: '1px solid var(--glass-border)', paddingBottom: '12px' }}>
                     {editingEventId === 'new' ? 'Tạo Sự Kiện Mới' : `Chỉnh sửa: ${eventTitle}`}
                   </h3>
 
@@ -2696,8 +2761,8 @@ export default function AdminDashboard({
                     />
                   </div>
 
-                  <div style={{ borderTop: '1px solid rgba(255, 255, 255, 0.06)', paddingTop: '20px', marginTop: '20px' }}>
-                    <h4 style={{ color: '#fff', fontSize: '15px', fontFamily: 'var(--font-display)', margin: '0 0 16px 0' }}>
+                  <div style={{ borderTop: '1px solid var(--glass-border)', paddingTop: '20px', marginTop: '20px' }}>
+                    <h4 style={{ color: 'var(--text-white)', fontSize: '15px', fontFamily: 'var(--font-display)', margin: '0 0 16px 0' }}>
                       Cấu Hình Phân Khu Vé ({eventZones.length}/3)
                     </h4>
                     
@@ -2827,7 +2892,7 @@ export default function AdminDashboard({
                     </div>
                   </div>
 
-                  <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', borderTop: '1px solid rgba(255, 255, 255, 0.06)', paddingTop: '20px' }}>
+                  <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', borderTop: '1px solid var(--glass-border)', paddingTop: '20px' }}>
                     <button 
                       type="button" 
                       onClick={() => setEditingEventId(null)} 
@@ -2877,17 +2942,49 @@ export default function AdminDashboard({
                   />
                 </div>
                 <div className="admin-toolbar-item">
-                  <CustomSelect 
-                    label="Sắp Xếp" 
-                    value={bookingSort} 
-                    onChange={setBookingSort} 
+                  <CustomSelect
+                    label="Sắp Xếp"
+                    value={bookingSort}
+                    onChange={setBookingSort}
                     options={[
                       { value: 'date-desc', label: 'Ngày đặt: Mới nhất' },
                       { value: 'date-asc', label: 'Ngày đặt: Cũ nhất' },
                       { value: 'price-desc', label: 'Tổng tiền: Giảm dần' },
                       { value: 'price-asc', label: 'Tổng tiền: Tăng dần' }
-                    ]} 
+                    ]}
                   />
+                </div>
+                <div className="admin-toolbar-item" style={{ flex: '0 0 auto' }}>
+                  <label className="admin-form-label">Tự hủy sau</label>
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    <select
+                      value={expiryMinutes}
+                      onChange={e => setExpiryMinutes(Number(e.target.value))}
+                      className="admin-form-input"
+                      style={{ width: '120px', padding: '8px 12px' }}
+                    >
+                      <option value={15}>15 phút</option>
+                      <option value={30}>30 phút</option>
+                      <option value={60}>1 giờ</option>
+                      <option value={120}>2 giờ</option>
+                      <option value={1440}>24 giờ</option>
+                    </select>
+                    <button
+                      type="button"
+                      onClick={handleCancelExpiredBookings}
+                      style={{
+                        padding: '8px 14px', borderRadius: '8px', border: 'none',
+                        background: 'linear-gradient(135deg, oklch(55% 0.18 30), oklch(48% 0.2 20))',
+                        color: '#fff', fontWeight: 600, fontSize: '12px',
+                        cursor: 'pointer', whiteSpace: 'nowrap', display: 'flex',
+                        alignItems: 'center', gap: '5px',
+                        boxShadow: '0 2px 8px rgba(220,80,50,0.25)'
+                      }}
+                    >
+                      <Trash2 size={13} />
+                      Hủy quá hạn ({bookings.filter(b => b.paymentStatus !== 'Paid' && getElapsedMinutes(b.createdAt) >= expiryMinutes).length})
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -2929,9 +3026,30 @@ export default function AdminDashboard({
                         </td>
                         <td style={{ fontFamily: 'var(--font-mono)', fontWeight: 600 }}>{formatPrice(b.totalPrice)}</td>
                         <td>
-                          <span className={`admin-status-badge ${b.paymentStatus === 'Paid' ? 'paid' : 'pending'}`}>
-                            {b.paymentStatus === 'Paid' ? 'Đã thu tiền' : 'Chưa thanh toán'}
-                          </span>
+                          {(() => {
+                            if (b.paymentStatus === 'Paid') {
+                              return <span className="admin-status-badge paid">Đã thu tiền</span>;
+                            }
+                            const elapsed = getElapsedMinutes(b.createdAt);
+                            const isExpired = elapsed >= expiryMinutes;
+                            const isWarning = elapsed >= expiryMinutes * 0.75;
+                            const timeLabel = elapsed < 60
+                              ? `${elapsed} phút`
+                              : `${Math.floor(elapsed / 60)}g${elapsed % 60 > 0 ? ` ${elapsed % 60}p` : ''}`;
+                            return (
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                <span className="admin-status-badge pending">Chưa thanh toán</span>
+                                <span style={{
+                                  fontSize: '10.5px',
+                                  fontFamily: 'var(--font-mono)',
+                                  color: isExpired ? 'oklch(58% 0.2 25)' : isWarning ? 'oklch(62% 0.18 60)' : 'var(--text-muted)',
+                                  fontWeight: isExpired ? 700 : 500,
+                                }}>
+                                  {isExpired ? `⚠ Quá hạn · ${timeLabel}` : `⏱ ${timeLabel}`}
+                                </span>
+                              </div>
+                            );
+                          })()}
                         </td>
                         <td style={{ fontSize: '12.5px', whiteSpace: 'nowrap' }}>{formatDateTime(b.createdAt)}</td>
                         <td style={{ textAlign: 'right' }}>
@@ -3101,7 +3219,7 @@ export default function AdminDashboard({
                       const discount = t.originalPrice > t.resalePrice ? Math.round(((t.originalPrice - t.resalePrice) / t.originalPrice) * 100) : 0;
                       return (
                         <tr key={t.id}>
-                          <td style={{ fontWeight: 600, color: '#fff' }}>{t.eventTitle}</td>
+                          <td style={{ fontWeight: 600, color: 'var(--text-white)' }}>{t.eventTitle}</td>
                           <td>
                             <div style={{ display: 'flex', flexDirection: 'column' }}>
                               <span>{t.zoneName}</span>
@@ -3300,7 +3418,7 @@ export default function AdminDashboard({
                             <td>
                               <img src={c.logo} alt={c.name} style={{ width: '36px', height: '36px', objectFit: 'cover', borderRadius: '50%' }} />
                             </td>
-                            <td style={{ fontWeight: 600, color: '#fff' }}>{c.name}</td>
+                            <td style={{ fontWeight: 600, color: 'var(--text-white)' }}>{c.name}</td>
                             <td>{c.type}</td>
                             <td>
                               <span style={{ textTransform: 'uppercase', fontSize: '10px', color: 'var(--brand-cyan)', border: '1px solid rgba(255,255,255,0.06)', padding: '2px 6px', borderRadius: '4px' }}>
@@ -3584,9 +3702,9 @@ export default function AdminDashboard({
                               width: '54px', 
                               height: '42px', 
                               padding: 0, 
-                              border: '1px solid rgba(255, 255, 255, 0.08)', 
-                              borderRadius: '8px', 
-                              background: 'transparent', 
+                              border: '1px solid var(--glass-border)',
+                              borderRadius: '8px',
+                              background: 'transparent',
                               cursor: 'pointer',
                               boxSizing: 'border-box'
                             }} 
@@ -3625,7 +3743,7 @@ export default function AdminDashboard({
                     />
                   </div>
 
-                  <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', borderTop: '1px solid rgba(255, 255, 255, 0.06)', paddingTop: '20px' }}>
+                  <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', borderTop: '1px solid var(--glass-border)', paddingTop: '20px' }}>
                     <button 
                       type="button" 
                       onClick={() => setEditingCreatorId(null)} 
@@ -3721,7 +3839,7 @@ export default function AdminDashboard({
                     ) : (
                       paginatedUsers.map(u => (
                         <tr key={u.id}>
-                          <td style={{ fontWeight: 600, color: '#fff', fontFamily: 'var(--font-mono)' }}>{u.username}</td>
+                          <td style={{ fontWeight: 600, color: 'var(--text-white)', fontFamily: 'var(--font-mono)' }}>{u.username}</td>
                           <td>{u.fullName || '—'}</td>
                           <td>{u.email}</td>
                           <td>{u.phone || '—'}</td>
@@ -3812,96 +3930,104 @@ export default function AdminDashboard({
 
               {showCreateUserModal && (
                 <div className="custom-popup-overlay">
-                  <form onSubmit={handleCreateUser} className="custom-popup-card" style={{ maxWidth: '500px', width: '90%', background: 'rgba(18, 14, 32, 0.95)', border: '1px solid rgba(167, 139, 250, 0.2)' }}>
+                  <form onSubmit={handleCreateUser} className="custom-popup-card" style={{ maxWidth: '680px', width: '90%', background: 'var(--admin-popup-bg)', border: '1px solid var(--admin-popup-border)', boxShadow: 'var(--admin-popup-shadow)' }}>
                     <h4 className="custom-popup-title">Cấp Tài Khoản Mới</h4>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '16px', textAlign: 'left' }}>
-                      <div className="admin-form-group">
-                        <label className="admin-form-label">Tên đăng nhập *</label>
-                        <input 
-                          type="text" 
-                          required 
-                          value={newUsername} 
-                          onChange={(e) => setNewUsername(e.target.value)} 
-                          className="admin-form-input" 
-                        />
-                      </div>
-                      <div className="admin-form-group">
-                        <label className="admin-form-label">Mật khẩu *</label>
-                        <input 
-                          type="password" 
-                          required 
-                          value={newPassword} 
-                          onChange={(e) => setNewPassword(e.target.value)} 
-                          className="admin-form-input" 
-                        />
-                      </div>
-                      <div className="admin-form-group">
-                        <label className="admin-form-label">Xác nhận mật khẩu *</label>
-                        <input 
-                          type="password" 
-                          required 
-                          value={confirmNewPassword} 
-                          onChange={(e) => setConfirmNewPassword(e.target.value)} 
-                          className="admin-form-input" 
-                        />
-                      </div>
-                      <div className="admin-form-group">
-                        <label className="admin-form-label">Email *</label>
-                        <input 
-                          type="email" 
-                          required 
-                          value={newEmail} 
-                          onChange={(e) => setNewEmail(e.target.value)} 
-                          className="admin-form-input" 
-                        />
-                      </div>
-                      <div className="admin-form-group">
-                        <label className="admin-form-label">Họ và tên</label>
-                        <input 
-                          type="text" 
-                          value={newFullName} 
-                          onChange={(e) => setNewFullName(e.target.value)} 
-                          className="admin-form-input" 
-                        />
-                      </div>
-                      <div className="admin-form-group">
-                        <label className="admin-form-label">Số điện thoại</label>
-                        <input 
-                          type="text" 
-                          value={newPhone} 
-                          onChange={(e) => setNewPhone(e.target.value)} 
-                          className="admin-form-input" 
-                        />
-                      </div>
-                      <div className="admin-form-group">
-                        <CustomSelect 
-                          label="Vai trò" 
-                          value={newRole} 
-                          onChange={setNewRole} 
-                          options={[
-                            { value: 'client', label: 'Khách hàng (Client)' },
-                            { value: 'organizer', label: 'Ban tổ chức (Organizer)' },
-                            { value: 'admin', label: 'Quản trị viên (Admin)' }
-                          ]} 
-                        />
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginTop: '16px', textAlign: 'left' }}>
+                      {/* Cột bên trái */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                        <div className="admin-form-group">
+                          <label className="admin-form-label">Tên đăng nhập *</label>
+                          <input 
+                            type="text" 
+                            required 
+                            value={newUsername} 
+                            onChange={(e) => setNewUsername(e.target.value)} 
+                            className="admin-form-input" 
+                          />
+                        </div>
+                        <div className="admin-form-group">
+                          <label className="admin-form-label">Mật khẩu *</label>
+                          <input 
+                            type="password" 
+                            required 
+                            value={newPassword} 
+                            onChange={(e) => setNewPassword(e.target.value)} 
+                            className="admin-form-input" 
+                          />
+                        </div>
+                        <div className="admin-form-group">
+                          <label className="admin-form-label">Họ và tên</label>
+                          <input 
+                            type="text" 
+                            value={newFullName} 
+                            onChange={(e) => setNewFullName(e.target.value)} 
+                            className="admin-form-input" 
+                          />
+                        </div>
+                        <div className="admin-form-group">
+                          <CustomSelect 
+                            label="Vai trò" 
+                            value={newRole} 
+                            onChange={setNewRole} 
+                            options={[
+                              { value: 'client', label: 'Khách hàng (Client)' },
+                              { value: 'organizer', label: 'Ban tổ chức (Organizer)' },
+                              { value: 'admin', label: 'Quản trị viên (Admin)' }
+                            ]} 
+                          />
+                        </div>
                       </div>
 
-                      {newRole === 'organizer' && (
+                      {/* Cột bên phải */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                         <div className="admin-form-group">
-                          <label className="admin-form-label">Liên kết Đối tác/Nghệ sĩ</label>
-                          <select
-                            value={selectedCreatorId}
-                            onChange={(e) => setSelectedCreatorId(e.target.value)}
-                            className="admin-form-input"
-                            style={{ background: '#0b0b0f', color: '#fff', border: '1px solid rgba(255,255,255,0.1)', height: '38px', borderRadius: '6px', width: '100%', padding: '0 8px' }}
-                          >
-                            <option value="">-- Không gán (Tạo sau) --</option>
-                            {creators.map(c => (
-                              <option key={c.id} value={c.id}>{c.name} ({c.type || 'Nghệ sĩ'})</option>
-                            ))}
-                          </select>
+                          <label className="admin-form-label">Email *</label>
+                          <input 
+                            type="email" 
+                            required 
+                            value={newEmail} 
+                            onChange={(e) => setNewEmail(e.target.value)} 
+                            className="admin-form-input" 
+                          />
                         </div>
-                      )}
+                        <div className="admin-form-group">
+                          <label className="admin-form-label">Xác nhận mật khẩu *</label>
+                          <input 
+                            type="password" 
+                            required 
+                            value={confirmNewPassword} 
+                            onChange={(e) => setConfirmNewPassword(e.target.value)} 
+                            className="admin-form-input" 
+                          />
+                        </div>
+                        <div className="admin-form-group">
+                          <label className="admin-form-label">Số điện thoại</label>
+                          <input 
+                            type="text" 
+                            value={newPhone} 
+                            onChange={(e) => setNewPhone(e.target.value)} 
+                            className="admin-form-input" 
+                          />
+                        </div>
+                        {newRole === 'organizer' ? (
+                          <div className="admin-form-group">
+                            <CustomSelect
+                              label="Liên kết Đối tác/Nghệ sĩ"
+                              value={selectedCreatorId}
+                              onChange={setSelectedCreatorId}
+                              options={[
+                                { value: "", label: "-- Không gán (Tạo sau) --" },
+                                ...creators.map(c => ({ value: c.id, label: `${c.name} (${c.type || 'Nghệ sĩ'})` }))
+                              ]}
+                            />
+                          </div>
+                        ) : (
+                          <div className="admin-form-group" style={{ visibility: 'hidden', height: '62px' }}>
+                            <label className="admin-form-label">&nbsp;</label>
+                            <div className="admin-form-input" style={{ border: 'none', background: 'transparent' }} />
+                          </div>
+                        )}
+                      </div>
                     </div>
                     <div className="custom-popup-actions" style={{ marginTop: '24px' }}>
                       <button 
@@ -3931,7 +4057,7 @@ export default function AdminDashboard({
 
               {changePasswordUserId && (
                 <div className="custom-popup-overlay">
-                  <form onSubmit={handleChangePassword} className="custom-popup-card" style={{ maxWidth: '400px', width: '90%', background: 'rgba(18, 14, 32, 0.95)', border: '1px solid rgba(167, 139, 250, 0.2)' }}>
+                  <form onSubmit={handleChangePassword} className="custom-popup-card" style={{ maxWidth: '400px', width: '90%', background: 'var(--admin-popup-bg)', border: '1px solid var(--admin-popup-border)', boxShadow: 'var(--admin-popup-shadow)' }}>
                     <h4 className="custom-popup-title">Đổi Mật Khẩu</h4>
                     <p className="custom-popup-message" style={{ fontSize: '13px', marginBottom: '16px' }}>
                       Nhập mật khẩu mới cho tài khoản: <strong>{users.find(u => u.id === changePasswordUserId)?.username}</strong>
@@ -4015,7 +4141,7 @@ export default function AdminDashboard({
                             <td>
                               <img src={event.image} alt={event.title} style={{ width: '48px', height: '64px', objectFit: 'cover', borderRadius: '4px' }} />
                             </td>
-                            <td style={{ fontWeight: 700, color: '#fff' }}>{event.title}</td>
+                            <td style={{ fontWeight: 700, color: 'var(--text-white)' }}>{event.title}</td>
                             <td>{organizer ? organizer.fullName : 'Hệ thống'}</td>
                             <td>{event.date} {event.time}</td>
                             <td>{event.location}</td>
@@ -4072,79 +4198,7 @@ export default function AdminDashboard({
             </div>
           )}
 
-          {activeTab === 'create-organizer' && (
-            <div className="admin-card" style={{ maxWidth: '600px', margin: '0 auto' }}>
-              <h3 style={{ fontSize: '20px', fontWeight: 700, color: '#fff', margin: '0 0 6px 0' }}>Tạo Tài Khoản Ban Tổ Chức</h3>
-              <p style={{ color: 'var(--text-muted)', fontSize: '13px', marginBottom: '24px' }}>
-                Cấp tài khoản mới cho đối tác thuộc Ban Tổ Chức để họ có quyền đăng nhập và đăng ký sự kiện.
-              </p>
 
-              <form onSubmit={async (e) => {
-                e.preventDefault();
-                const form = e.target;
-                const username = form.username.value;
-                const password = form.password.value;
-                const email = form.email.value;
-                const fullName = form.fullName.value;
-                const phone = form.phone.value;
-
-                if (!username || !password || !email) {
-                  await showAlert('Vui lòng điền đầy đủ các thông tin bắt buộc');
-                  return;
-                }
-
-                try {
-                  const res = await fetch('http://localhost:5000/api/admin/users', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                      username,
-                      password,
-                      email,
-                      fullName,
-                      phone,
-                      role: 'organizer'
-                    })
-                  });
-                  if (!res.ok) {
-                    const err = await res.json();
-                    await showAlert(err.error || 'Cấp tài khoản thất bại');
-                    return;
-                  }
-                  await showAlert('Tạo tài khoản Ban Tổ Chức thành công!');
-                  form.reset();
-                  await fetchAllData();
-                } catch (err) {
-                  console.error(err);
-                  await showAlert('Lỗi kết nối API cấp tài khoản');
-                }
-              }} style={{ display: 'flex', flexDirection: 'column', gap: '16px', textAlign: 'left' }}>
-                <div className="admin-form-group">
-                  <label className="admin-form-label">Tên đăng nhập (Username) *</label>
-                  <input type="text" name="username" required className="admin-form-input" />
-                </div>
-                <div className="admin-form-group">
-                  <label className="admin-form-label">Mật khẩu *</label>
-                  <input type="password" name="password" required className="admin-form-input" />
-                </div>
-                <div className="admin-form-group">
-                  <label className="admin-form-label">Email liên hệ *</label>
-                  <input type="email" name="email" required className="admin-form-input" />
-                </div>
-                <div className="admin-form-group">
-                  <label className="admin-form-label">Tên Ban Tổ Chức / Đơn vị *</label>
-                  <input type="text" name="fullName" required className="admin-form-input" />
-                </div>
-                <div className="admin-form-group">
-                  <label className="admin-form-label">Số điện thoại liên hệ</label>
-                  <input type="text" name="phone" className="admin-form-input" />
-                </div>
-                <button type="submit" className="btn-primary" style={{ marginTop: '12px', padding: '12px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>
-                  TẠO TÀI KHOẢN BTC
-                </button>
-              </form>
-            </div>
-          )}
 
         </main>
       </div>

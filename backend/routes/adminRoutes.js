@@ -2,7 +2,7 @@ import express from 'express';
 import multer from 'multer';
 import path from 'path';
 import { createEvent, updateEvent, deleteEvent, createCreator, updateCreator, deleteCreator } from '../controllers/eventController.js';
-import { getAdminBookings, updateBookingPayment, deleteBooking } from '../controllers/bookingController.js';
+import { getAdminBookings, updateBookingPayment, deleteBooking, cancelExpiredBookings } from '../controllers/bookingController.js';
 import { getAdminResaleList, updateAdminResaleStatus, deleteAdminResale } from '../controllers/resaleController.js';
 import { getAdminUsers, updateUserRole, deleteUser, createAdminUser, updateUserPassword } from '../controllers/authController.js';
 
@@ -35,6 +35,15 @@ router.put('/creators/:id', updateCreator);
 router.delete('/creators/:id', deleteCreator);
 
 router.get('/bookings', getAdminBookings);
+router.post('/bookings/expire', async (req, res) => {
+  try {
+    const { expiryMinutes = 30 } = req.body;
+    const result = await cancelExpiredBookings(Number(expiryMinutes));
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 router.put('/bookings/:id/payment', updateBookingPayment);
 router.delete('/bookings/:id', deleteBooking);
 

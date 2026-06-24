@@ -1,3 +1,4 @@
+import { Op } from 'sequelize';
 import { Booking, Ticket, Zone, Event, sequelize } from '../models/index.js';
 
 export const createBooking = async (req, res) => {
@@ -160,14 +161,52 @@ export const updateBookingPayment = async (req, res) => {
 };
 
 export const deleteBooking = async (req, res) => {
+  const t = await sequelize.transaction();
   try {
-    const booking = await Booking.findByPk(req.params.id);
-    if (!booking) return res.status(404).json({ error: 'Không tìm thấy đơn hàng' });
-    await Ticket.destroy({ where: { bookingId: booking.id } });
-    await booking.destroy();
+    const booking = await Booking.findByPk(req.params.id, { transaction: t });
+    if (!booking) {
+      await t.rollback();
+      return res.status(404).json({ error: 'Không tìm thấy đơn hàng' });
+    }
+    if (booking.paymentStatus !== 'Paid') {
+      await Zone.increment('availableTickets', {
+        by: booking.count,
+        where: { id: booking.zoneId },
+        transaction: t
+      });
+    }
+    await Ticket.destroy({ where: { bookingId: booking.id }, transaction: t });
+    await booking.destroy({ transaction: t });
+    await t.commit();
     res.json({ message: 'Xóa đơn hàng thành công' });
   } catch (error) {
+    await t.rollback();
     res.status(500).json({ error: error.message });
+  }
+};
+
+export const cancelExpiredBookings = async (expiryMinutes = 30) => {
+  const t = await sequelize.transaction();
+  try {
+    const cutoff = new Date(Date.now() - expiryMinutes * 60 * 1000);
+    const expired = await Booking.findAll({
+      where: { paymentStatus: 'Pending', createdAt: { [Op.lt]: cutoff } },
+      transaction: t
+    });
+    for (const booking of expired) {
+      await Zone.increment('availableTickets', {
+        by: booking.count,
+        where: { id: booking.zoneId },
+        transaction: t
+      });
+      await Ticket.destroy({ where: { bookingId: booking.id }, transaction: t });
+      await booking.destroy({ transaction: t });
+    }
+    await t.commit();
+    return { cancelled: expired.length };
+  } catch (error) {
+    await t.rollback();
+    throw error;
   }
 };
 

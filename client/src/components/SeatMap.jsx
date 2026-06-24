@@ -1,8 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { Armchair, ArrowLeft, Layers, Info } from 'lucide-react';
 
+const getSeatLayoutFromCapacity = (capacity = 0) => {
+  const total = Math.max(1, Number(capacity) || 0);
+  const cols = Math.min(total, 10);
+  return { rows: Math.ceil(total / cols), cols };
+};
+
+const normalizeSeatZones = (zones = []) => zones.map((zone) => {
+  if (!zone || zone.isStanding) return zone;
+  const rows = Number(zone.rows) || 0;
+  const cols = Number(zone.cols) || 0;
+  if (rows > 0 && cols > 0) return { ...zone, rows, cols, availableTickets: rows * cols };
+  const layout = getSeatLayoutFromCapacity(zone.availableTickets);
+  return { ...zone, ...layout, availableTickets: layout.rows * layout.cols };
+});
+
 export default function SeatMap({ event, onBack, onProceedCheckout, showAlert }) {
-  const [selectedZone, setSelectedZone] = useState(event.zones[0]);
+  const normalizedZones = normalizeSeatZones(event.zones || []);
+  const [selectedZone, setSelectedZone] = useState(normalizedZones[0]);
   const [selectedSeats, setSelectedSeats] = useState([]);
   const [standingCount, setStandingCount] = useState(0);
   const [takenSeats, setTakenSeats] = useState([]);
@@ -746,7 +762,7 @@ export default function SeatMap({ event, onBack, onProceedCheckout, showAlert })
 
 
           <div style={{ display: 'flex', gap: '12px', borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: '20px', zIndex: 2, position: 'relative' }}>
-            {event.zones.map((zone) => {
+            {normalizedZones.map((zone) => {
               const isActive = selectedZone.id === zone.id;
               const isVip = zone.id === 'vip-zone';
               return (
@@ -835,7 +851,7 @@ export default function SeatMap({ event, onBack, onProceedCheckout, showAlert })
 
 
             <div className="seat-grid-scroll-wrapper">
-              <div className={`seat-grid-container ${selectedZone.id === 'vip-zone' ? 'vip-active' : 'standard-active'}`}>
+              <div className={`seat-grid-container ${isVipZone(selectedZone) ? 'vip-active' : 'standard-active'}`}>
                 <div style={{
                   display: 'flex',
                   flexDirection: 'column',
@@ -870,7 +886,7 @@ export default function SeatMap({ event, onBack, onProceedCheckout, showAlert })
                                 key={seatNum}
                                 disabled={isTaken}
                                 onClick={() => toggleSeatSelection(rowLetter, seatNum)}
-                                className={`seat ${selectedZone.id === 'vip-zone' ? 'vip' : 'standard'} ${isTaken ? 'taken' : ''} ${isSelected ? 'selected' : ''}`}
+                                className={`seat ${isVipZone(selectedZone) ? 'vip' : 'standard'} ${isTaken ? 'taken' : ''} ${isSelected ? 'selected' : ''}`}
                                 title={`${rowLetter}-${seatNum} (${isTaken ? 'Đã bán' : 'Còn trống'})`}
                               >
                                 {isSelected ? '◉' : (seatNum < 10 ? `0${seatNum}` : seatNum)}
@@ -895,11 +911,11 @@ export default function SeatMap({ event, onBack, onProceedCheckout, showAlert })
               paddingTop: '16px'
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span className={`seat ${selectedZone.id === 'vip-zone' ? 'vip' : 'standard'}`} style={{ cursor: 'default' }} />
+                <span className={`seat ${isVipZone(selectedZone) ? 'vip' : 'standard'}`} style={{ cursor: 'default' }} />
                 <span style={{ color: 'var(--text-muted)' }}>Còn trống</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span className="seat selected" style={{ cursor: 'default', background: selectedZone.id === 'vip-zone' ? 'var(--brand-gold)' : 'var(--brand-violet)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>◉</span>
+                <span className="seat selected" style={{ cursor: 'default', background: isVipZone(selectedZone) ? 'var(--brand-gold)' : 'var(--brand-violet)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>◉</span>
                 <span style={{ color: 'var(--text-muted)' }}>Đang chọn</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -950,7 +966,7 @@ export default function SeatMap({ event, onBack, onProceedCheckout, showAlert })
             </div>
             <div className="receipt-row">
               <span className="receipt-row-label">Đơn giá:</span>
-              <span className="receipt-row-value" style={{ color: selectedZone.id === 'vip-zone' ? 'var(--brand-gold)' : 'var(--brand-cyan)' }}>{formatPrice(selectedZone.price)}</span>
+              <span className="receipt-row-value" style={{ color: isVipZone(selectedZone) ? 'var(--brand-gold)' : 'var(--brand-cyan)' }}>{formatPrice(selectedZone.price)}</span>
             </div>
             <div className="receipt-row">
               <span className="receipt-row-label">Phí dịch vụ & VAT:</span>
@@ -996,7 +1012,7 @@ export default function SeatMap({ event, onBack, onProceedCheckout, showAlert })
 
               <div className="mini-ticket-wrapper">
                 {selectedSeats.map(seatId => {
-                  const isVip = selectedZone.id === 'vip-zone';
+                  const isVip = isVipZone(selectedZone);
                   return (
                     <div key={seatId} className={`mini-ticket ${isVip ? 'vip' : 'standard'}`}>
                       <div className="mini-ticket-notch notch-top"></div>
@@ -1041,8 +1057,8 @@ export default function SeatMap({ event, onBack, onProceedCheckout, showAlert })
                 fontSize: '24px',
                 fontWeight: 800,
                 fontFamily: 'var(--font-display)',
-                color: ticketCount === 0 ? 'var(--text-muted)' : (selectedZone.id === 'vip-zone' ? 'var(--brand-gold)' : 'var(--brand-cyan)'),
-                textShadow: ticketCount === 0 ? 'none' : (selectedZone.id === 'vip-zone' ? '0 0 10px rgba(253, 218, 13, 0.2)' : '0 0 10px rgba(6, 182, 212, 0.2)')
+                color: ticketCount === 0 ? 'var(--text-muted)' : (isVipZone(selectedZone) ? 'var(--brand-gold)' : 'var(--brand-cyan)'),
+                textShadow: ticketCount === 0 ? 'none' : (isVipZone(selectedZone) ? '0 0 10px rgba(253, 218, 13, 0.2)' : '0 0 10px rgba(6, 182, 212, 0.2)')
               }}>
                 {formatPrice(totalPrice)}
               </span>

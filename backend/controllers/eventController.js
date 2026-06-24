@@ -43,6 +43,22 @@ export const getCreators = async (req, res) => {
   }
 };
 
+const getZoneLayout = (capacity = 0) => {
+  const total = Math.max(1, Number(capacity) || 0);
+  const cols = Math.min(total, 10);
+  return { rows: Math.ceil(total / cols), cols };
+};
+
+const normalizeEventZones = (zones = []) => zones.map((zone) => {
+  const base = { ...zone, price: Number(zone.price) || 0, availableTickets: Number(zone.availableTickets) || 0, isStanding: !!zone.isStanding };
+  if (base.isStanding) return { ...base, rows: null, cols: null };
+  const rows = Number(zone.rows) || 0;
+  const cols = Number(zone.cols) || 0;
+  if (rows > 0 && cols > 0) return { ...base, rows, cols, availableTickets: rows * cols };
+  const layout = getZoneLayout(base.availableTickets);
+  return { ...base, ...layout, availableTickets: layout.rows * layout.cols };
+});
+
 export const createEvent = async (req, res) => {
   const { title, description, category, date, time, location, priceRange, image, badge, theme, isFeatured, isTrending, zones, creatorId, organizerId, status } = req.body;
   const t = await sequelize.transaction();
@@ -67,8 +83,9 @@ export const createEvent = async (req, res) => {
       status: status || 'pending'
     }, { transaction: t });
 
-    if (zones && zones.length > 0) {
-      for (const zone of zones) {
+    const normalizedZones = normalizeEventZones(zones);
+    if (normalizedZones.length > 0) {
+      for (const zone of normalizedZones) {
         await Zone.create({
           id: zone.id || `zone-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
           eventId,
@@ -116,10 +133,11 @@ export const updateEvent = async (req, res) => {
     }, { transaction: t });
 
     if (zones) {
+      const normalizedZones = normalizeEventZones(zones);
       await Zone.destroy({ where: { eventId: event.id }, transaction: t });
-      for (const zone of zones) {
+      for (const zone of normalizedZones) {
         await Zone.create({
-          id: zone.id.startsWith('zone-') ? zone.id : `zone-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+          id: zone.id && zone.id.startsWith('zone-') ? zone.id : `zone-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
           eventId: event.id,
           name: zone.name,
           price: zone.price,

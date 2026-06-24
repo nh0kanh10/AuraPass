@@ -6,6 +6,11 @@ const SECTION_LED = {
   resale: { color: 'oklch(68% 0.2 200)', glow: 'oklch(68% 0.2 200 / 0.9)' },
   artists: { color: 'oklch(76% 0.15 85)', glow: 'oklch(76% 0.15 85 / 0.9)' },
 };
+const zoneFieldStyle={display:'flex',flexDirection:'column',gap:'6px'};
+const zoneLabelStyle={fontSize:'10px',fontFamily:'var(--font-mono)',letterSpacing:'0.08em',color:'var(--text-muted)',textTransform:'uppercase'};
+const seatLayout=(n=0)=>{const t=Math.max(1,Number(n)||0),c=Math.min(t,10);return{rows:Math.ceil(t/c),cols:c};};
+const normalizeOrganizerZones=(zones=[])=>zones.map((z,i)=>{const b={...z,name:z.name||(i===0?'GA':`Zone ${i+1}`),price:Number(z.price)||0,availableTickets:Number(z.availableTickets)||0,isStanding:!!z.isStanding};if(b.isStanding)return{...b,rows:null,cols:null};const rows=Number(z.rows)||0,cols=Number(z.cols)||0;if(rows>0&&cols>0)return{...b,rows,cols,availableTickets:rows*cols};const l=seatLayout(b.availableTickets||50);return{...b,...l,availableTickets:l.rows*l.cols};});
+const DEFAULT_ORGANIZER_ZONES=normalizeOrganizerZones([{name:'GA',price:500000,isStanding:true,availableTickets:200},{name:'VIP',price:1500000,isStanding:false,availableTickets:50}]);
 
 export default function Header({
   theme,
@@ -87,10 +92,7 @@ export default function Header({
   const [evtImage, setEvtImage] = useState('');
   const [evtBadge, setEvtBadge] = useState('');
   const [evtTheme, setEvtTheme] = useState('cyberpunk');
-  const [evtZones, setEvtZones] = useState([
-    { name: 'GA', price: 500000, isStanding: true, availableTickets: 200 },
-    { name: 'VIP', price: 1500000, isStanding: false, availableTickets: 50 }
-  ]);
+  const [evtZones, setEvtZones] = useState(DEFAULT_ORGANIZER_ZONES);
   const [isEvtSubmitting, setIsEvtSubmitting] = useState(false);
   const [isImgUploading, setIsImgUploading] = useState(false);
   const imgInputRef = useRef(null);
@@ -136,15 +138,7 @@ export default function Header({
     setEvtImage(event.image || '');
     setEvtBadge(event.badge || '');
     setEvtTheme(event.theme || 'cyberpunk');
-    setEvtZones(event.zones && event.zones.length > 0 ? event.zones.map(z => ({
-      name: z.name,
-      price: z.price,
-      isStanding: z.isStanding,
-      availableTickets: z.availableTickets
-    })) : [
-      { name: 'GA', price: 500000, isStanding: true, availableTickets: 200 },
-      { name: 'VIP', price: 1500000, isStanding: false, availableTickets: 50 }
-    ]);
+    setEvtZones(event.zones && event.zones.length > 0 ? normalizeOrganizerZones(event.zones) : DEFAULT_ORGANIZER_ZONES);
     setModalType('edit-event');
   };
 
@@ -234,7 +228,7 @@ export default function Header({
           image: evtImage,
           badge: evtBadge,
           theme: evtTheme,
-          zones: evtZones,
+          zones: normalizeOrganizerZones(evtZones),
           organizerId: currentUser ? currentUser.id : null,
           creatorId: myCreator ? myCreator.id : (isEdit ? editingEvent.creatorId : null),
           status: isEdit ? editingEvent.status : 'pending'
@@ -265,10 +259,7 @@ export default function Header({
       setEvtImage('');
       setEvtBadge('');
       setEvtTheme('cyberpunk');
-      setEvtZones([
-        { name: 'GA', price: 500000, isStanding: true, availableTickets: 200 },
-        { name: 'VIP', price: 1500000, isStanding: false, availableTickets: 50 }
-      ]);
+      setEvtZones(DEFAULT_ORGANIZER_ZONES);
       fetchMyEvents();
     } catch (err) {
       console.error(err);
@@ -1859,6 +1850,10 @@ export default function Header({
               max-width: 720px !important;
               width: 90% !important;
             }
+            .create-modal-carrier {
+              max-width: 680px !important;
+              width: 95% !important;
+            }
             .detail-hero-banner {
               width: 100%;
               height: 160px;
@@ -1982,16 +1977,16 @@ export default function Header({
                   alignItems: 'center',
                   gap: '10px',
                   padding: '10px 14px',
-                  background: 'rgba(139, 92, 246, 0.08)',
+                  background: theme === 'light' ? 'rgba(139, 92, 246, 0.12)' : 'rgba(139, 92, 246, 0.08)',
                   borderRadius: '8px',
-                  border: '1px solid rgba(139, 92, 246, 0.2)',
+                  border: theme === 'light' ? '1px solid rgba(139, 92, 246, 0.28)' : '1px solid rgba(139, 92, 246, 0.2)',
                   marginBottom: '10px',
                   zIndex: 2,
                   position: 'relative'
                 }}>
-                  <img src={myCreator.logo} alt={myCreator.name} style={{ width: '26px', height: '26px', borderRadius: '50%', objectFit: 'cover', border: '1px solid rgba(255,255,255,0.1)' }} />
-                  <span style={{ fontSize: '12px', color: 'var(--text-white)' }}>
-                    Đăng ký dưới danh nghĩa: <strong style={{ color: 'var(--brand-cyan)' }}>{myCreator.name}</strong>
+                  <img src={myCreator.logo} alt={myCreator.name} style={{ width: '26px', height: '26px', borderRadius: '50%', objectFit: 'cover', border: theme === 'light' ? '1px solid rgba(15, 23, 42, 0.12)' : '1px solid rgba(255,255,255,0.1)' }} />
+                  <span style={{ fontSize: '12px', color: theme === 'light' ? 'var(--text-secondary)' : 'var(--text-white)' }}>
+                    Đăng ký dưới danh nghĩa: <strong style={{ color: theme === 'light' ? '#0369a1' : 'var(--brand-cyan)' }}>{myCreator.name}</strong>
                   </span>
                 </div>
               )}
@@ -2290,39 +2285,93 @@ export default function Header({
                 </div>
 
                 <div className="evt-zones-section">
-                  <span className="evt-zones-title">GIÁ VÉ THEO HẠNG</span>
-                  <div className="evt-zones-header-row">
-                    <span style={{ width: '52px' }}>Hạng</span>
-                    <span style={{ flex: 1 }}>Đơn giá (đ)</span>
-                    <span style={{ flex: 1 }}>Số lượng vé</span>
+                  <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'10px'}}>
+                    <span className="evt-zones-title">CẤU HÌNH PHÂN KHU VÉ</span>
+                    <button
+                      type="button"
+                      disabled={evtZones.length >= 3}
+                      onClick={() => setEvtZones([...evtZones, normalizeOrganizerZones([{ name: 'Zone Mới', price: 100000, isStanding: false, availableTickets: 30 }])[0]])}
+                      style={{
+                        padding: '6px 12px',
+                        fontSize: '11px',
+                        fontFamily: 'var(--font-mono)',
+                        fontWeight: '700',
+                        color: '#fff',
+                        background: 'linear-gradient(135deg, #a78bfa, #8b5cf6)',
+                        border: 'none',
+                        borderRadius: '8px',
+                        cursor: evtZones.length >= 3 ? 'not-allowed' : 'pointer',
+                        opacity: evtZones.length >= 3 ? 0.5 : 1
+                      }}
+                    >
+                      + THÊM PHÂN KHU
+                    </button>
                   </div>
                   {evtZones.map((zone, idx) => (
-                    <div key={idx} className="evt-zone-row">
-                      <span className="evt-zone-name">{zone.name}</span>
-                      <input
-                        type="number"
-                        placeholder="500000"
-                        value={zone.price}
-                        onChange={(e) => {
-                          const newZones = [...evtZones];
-                          newZones[idx].price = parseInt(e.target.value) || 0;
-                          setEvtZones(newZones);
-                        }}
-                        className="edm-input-field-new evt-zone-input"
-                      />
-                      <input
-                        type="number"
-                        placeholder="100"
-                        value={zone.availableTickets}
-                        onChange={(e) => {
-                          const newZones = [...evtZones];
-                          newZones[idx].availableTickets = parseInt(e.target.value) || 0;
-                          setEvtZones(newZones);
-                        }}
-                        className="edm-input-field-new evt-zone-input"
-                      />
+                    <div key={idx} style={{display:'flex',flexDirection:'column',gap:'8px',padding:'12px',border:'1px solid rgba(255,255,255,0.06)',borderRadius:'10px',background:'rgba(255,255,255,0.02)', position:'relative'}}>
+                      {evtZones.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => setEvtZones(evtZones.filter((_, i) => i !== idx))}
+                          style={{
+                            position:'absolute',
+                            top:'6px',
+                            right:'8px',
+                            width:'22px',
+                            height:'22px',
+                            borderRadius:'6px',
+                            background:'rgba(239,68,68,0.1)',
+                            border:'1px solid rgba(239,68,68,0.2)',
+                            color:'#f87171',
+                            fontSize:'12px',
+                            cursor:'pointer',
+                            display:'flex',
+                            alignItems:'center',
+                            justifyContent:'center'
+                          }}
+                        >×</button>
+                      )}
+                      <div style={{display:'grid',gridTemplateColumns:'1.2fr 1fr 1fr',gap:'8px'}}>
+                        <div style={{display:'flex',flexDirection:'column',gap:'4px'}}>
+                          <span style={{ fontSize: '10px', fontFamily: 'var(--font-mono)', letterSpacing: '0.08em', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Tên Phân Khu</span>
+                          <input type="text" value={zone.name} onChange={(e)=>setEvtZones(evtZones.map((z,i)=>i===idx?{...z,name:e.target.value}:z))} className="edm-input-field-new evt-zone-input" placeholder="VIP, GA..." />
+                        </div>
+                        <div style={{display:'flex',flexDirection:'column',gap:'4px'}}>
+                          <span style={{ fontSize: '10px', fontFamily: 'var(--font-mono)', letterSpacing: '0.08em', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Giá Vé (VND)</span>
+                          <input type="number" value={zone.price} onChange={(e)=>setEvtZones(evtZones.map((z,i)=>i===idx?{...z,price:Number(e.target.value)||0}:z))} className="edm-input-field-new evt-zone-input" placeholder="500000" />
+                        </div>
+                        <div style={{display:'flex',flexDirection:'column',gap:'4px'}}>
+                          <span style={{ fontSize: '10px', fontFamily: 'var(--font-mono)', letterSpacing: '0.08em', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Loại Khu</span>
+                          <select value={zone.isStanding?'standing':'seated'} onChange={(e)=>setEvtZones(normalizeOrganizerZones(evtZones.map((z,i)=>i===idx?{...z,isStanding:e.target.value==='standing'}:z)))} className="edm-input-field-new evt-zone-input">
+                            <option value="seated">Ghế ngồi</option>
+                            <option value="standing">Vé đứng GA</option>
+                          </select>
+                        </div>
+                      </div>
+                      {zone.isStanding ? (
+                        <div style={{display:'flex',flexDirection:'column',gap:'4px'}}>
+                          <span style={{ fontSize: '10px', fontFamily: 'var(--font-mono)', letterSpacing: '0.08em', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Số Vé Đăng Ký</span>
+                          <input type="number" value={zone.availableTickets} onChange={(e)=>setEvtZones(evtZones.map((z,i)=>i===idx?{...z,availableTickets:Number(e.target.value)||0}:z))} className="edm-input-field-new evt-zone-input" placeholder="200" />
+                        </div>
+                      ) : (
+                        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:'8px'}}>
+                          <div style={{display:'flex',flexDirection:'column',gap:'4px'}}>
+                            <span style={{ fontSize: '10px', fontFamily: 'var(--font-mono)', letterSpacing: '0.08em', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Số Hàng Ghế</span>
+                            <input type="number" value={zone.rows||''} onChange={(e)=>setEvtZones(normalizeOrganizerZones(evtZones.map((z,i)=>i===idx?{...z,rows:Number(e.target.value)||0}:z)))} className="edm-input-field-new evt-zone-input" placeholder="3" />
+                          </div>
+                          <div style={{display:'flex',flexDirection:'column',gap:'4px'}}>
+                            <span style={{ fontSize: '10px', fontFamily: 'var(--font-mono)', letterSpacing: '0.08em', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Ghế Mỗi Hàng</span>
+                            <input type="number" value={zone.cols||''} onChange={(e)=>setEvtZones(normalizeOrganizerZones(evtZones.map((z,i)=>i===idx?{...z,cols:Number(e.target.value)||0}:z)))} className="edm-input-field-new evt-zone-input" placeholder="5" />
+                          </div>
+                          <div style={{display:'flex',flexDirection:'column',gap:'4px'}}>
+                            <span style={{ fontSize: '10px', fontFamily: 'var(--font-mono)', letterSpacing: '0.08em', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Tổng Số Ghế</span>
+                            <input type="number" value={zone.availableTickets||0} readOnly className="edm-input-field-new evt-zone-input" />
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ))}
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: 1.5, marginTop:'6px' }}>* Khu đứng chỉ nhập tổng số vé. Khu ghế ngồi tự tính tổng ghế bằng Số hàng × Ghế mỗi hàng. Giới hạn tối đa 3 phân khu.</span>
                 </div>
 
                 <button type="submit" disabled={isEvtSubmitting} className="edm-btn-action" style={{ marginTop: '6px' }}>
