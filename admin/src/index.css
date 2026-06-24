@@ -2699,6 +2699,11 @@ p {
 }
 
 /* --- ANIMATIONS DEFINITIONS (GPU ACCELERATED ONLY) --- */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 @keyframes spinClockwise {
   from {
     transform: rotate(0deg);

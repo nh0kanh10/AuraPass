@@ -503,6 +503,7 @@ export default function AdminDashboard({
   const [creatorPage, setCreatorPage] = useState(1);
   const [creatorLimit, setCreatorLimit] = useState(5);
   const [expiryMinutes, setExpiryMinutes] = useState(30);
+  const [expiryLoading, setExpiryLoading] = useState(false);
 
   const totalRevenue = bookings
     .filter(b => b.paymentStatus === 'Paid')
@@ -975,6 +976,7 @@ export default function AdminDashboard({
     }
     const confirmed = await showConfirm(`Hủy ${expiredCount} đơn CHƯA THANH TOÁN quá ${expiryMinutes} phút? Ghế sẽ được trả lại.`);
     if (!confirmed) return;
+    setExpiryLoading(true);
     try {
       const res = await fetch('http://localhost:5000/api/admin/bookings/expire', {
         method: 'POST',
@@ -988,6 +990,8 @@ export default function AdminDashboard({
       await fetchAllData();
     } catch (err) {
       await showAlert('Lỗi: ' + err.message);
+    } finally {
+      setExpiryLoading(false);
     }
   };
 
@@ -2972,17 +2976,25 @@ export default function AdminDashboard({
                     <button
                       type="button"
                       onClick={handleCancelExpiredBookings}
+                      disabled={expiryLoading}
                       style={{
                         padding: '8px 14px', borderRadius: '8px', border: 'none',
-                        background: 'linear-gradient(135deg, oklch(55% 0.18 30), oklch(48% 0.2 20))',
+                        background: expiryLoading
+                          ? 'oklch(45% 0.05 250)'
+                          : 'linear-gradient(135deg, oklch(55% 0.18 30), oklch(48% 0.2 20))',
                         color: '#fff', fontWeight: 600, fontSize: '12px',
-                        cursor: 'pointer', whiteSpace: 'nowrap', display: 'flex',
+                        cursor: expiryLoading ? 'not-allowed' : 'pointer',
+                        whiteSpace: 'nowrap', display: 'flex',
                         alignItems: 'center', gap: '5px',
-                        boxShadow: '0 2px 8px rgba(220,80,50,0.25)'
+                        boxShadow: expiryLoading ? 'none' : '0 2px 8px rgba(220,80,50,0.25)',
+                        opacity: expiryLoading ? 0.7 : 1,
+                        transition: 'all 0.2s'
                       }}
                     >
-                      <Trash2 size={13} />
-                      Hủy quá hạn ({bookings.filter(b => b.paymentStatus !== 'Paid' && getElapsedMinutes(b.createdAt) >= expiryMinutes).length})
+                      {expiryLoading
+                        ? <><RefreshCw size={13} style={{ animation: 'spin 1s linear infinite' }} /> Đang xử lý...</>
+                        : <><Trash2 size={13} /> Hủy quá hạn ({bookings.filter(b => b.paymentStatus !== 'Paid' && getElapsedMinutes(b.createdAt) >= expiryMinutes).length})</>
+                      }
                     </button>
                   </div>
                 </div>

@@ -186,14 +186,15 @@ export const deleteBooking = async (req, res) => {
 };
 
 export const cancelExpiredBookings = async (expiryMinutes = 30) => {
-  const t = await sequelize.transaction();
-  try {
-    const cutoff = new Date(Date.now() - expiryMinutes * 60 * 1000);
-    const expired = await Booking.findAll({
-      where: { paymentStatus: 'Pending', createdAt: { [Op.lt]: cutoff } },
-      transaction: t
-    });
-    for (const booking of expired) {
+  const cutoff = new Date(Date.now() - expiryMinutes * 60 * 1000);
+  const expired = await Booking.findAll({
+    where: { paymentStatus: 'Pending', createdAt: { [Op.lt]: cutoff } }
+  });
+  if (expired.length === 0) return { cancelled: 0 };
+  let cancelled = 0;
+  for (const booking of expired) {
+    const t = await sequelize.transaction();
+    try {
       await Zone.increment('availableTickets', {
         by: booking.count,
         where: { id: booking.zoneId },
@@ -201,13 +202,14 @@ export const cancelExpiredBookings = async (expiryMinutes = 30) => {
       });
       await Ticket.destroy({ where: { bookingId: booking.id }, transaction: t });
       await booking.destroy({ transaction: t });
+      await t.commit();
+      cancelled++;
+    } catch (error) {
+      try { await t.rollback(); } catch (_) {}
+      console.error(`[expire] booking ${booking.id} failed:`, error.message);
     }
-    await t.commit();
-    return { cancelled: expired.length };
-  } catch (error) {
-    await t.rollback();
-    throw error;
   }
+  return { cancelled };
 };
 
 export const getTakenSeats = async (req, res) => {
