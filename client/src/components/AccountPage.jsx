@@ -252,7 +252,7 @@ export default function AccountPage({
     if (!evtTitle) missing.push('Tên sự kiện');
     if (!evtDate) missing.push('Ngày');
     if (!evtLocation) missing.push('Địa điểm');
-    if (!evtPriceRange) missing.push('Khoảng giá');
+    if (evtEventType !== 'online' && !evtPriceRange) missing.push('Khoảng giá');
     if (!evtImage) missing.push('Ảnh');
     if (missing.length) { await showAlert(`Thiếu: ${missing.join(', ')}`); return; }
     setSubmittingEvt(true);
@@ -265,7 +265,8 @@ export default function AccountPage({
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             title: evtTitle, description: evtDesc, category: evtCategory,
-            date: evtDate, time: evtTime, location: evtLocation, priceRange: evtPriceRange,
+            date: evtDate, time: evtTime, location: evtLocation,
+            priceRange: evtEventType === 'online' ? `${Number(evtOnlinePrice).toLocaleString('vi-VN')}đ` : evtPriceRange,
             image: evtImage, badge: evtBadge, theme: evtTheme,
             zones: evtEventType === 'online'
               ? [{ id: `zone-online-${Date.now()}`, name: 'Vé tham dự trực tuyến', price: Number(evtOnlinePrice) || 0, isStanding: true, availableTickets: Number(evtOnlineCapacity) || 100, rows: null, cols: null }]
@@ -870,10 +871,12 @@ export default function AccountPage({
                 </div>
               </div>
 
+              {evtEventType !== 'online' && (
               <div>
                 <label style={labelSt}>Khoảng giá hiển thị *</label>
                 <input style={inputSt} value={evtPriceRange} onChange={e => setEvtPriceRange(e.target.value)} placeholder="VD: 500.000đ - 1.500.000đ" />
               </div>
+              )}
 
               {/* Event type */}
               <div>

@@ -358,6 +358,24 @@ export default function EventCard({ event, isFeatured, onClick }) {
         }}>
           {config.label}
         </div>
+        {event.eventType === 'online' && (
+          <div style={{
+            position: 'absolute', top: '20px', left: '20px', zIndex: 4,
+            background: 'rgba(0,255,255,0.12)', border: '1px solid rgba(0,255,255,0.4)',
+            color: 'var(--brand-cyan)', fontSize: '9px', fontWeight: 700,
+            padding: '4px 10px', borderRadius: '4px',
+            fontFamily: 'var(--font-mono)', letterSpacing: '1px'
+          }}>💻 ONLINE</div>
+        )}
+        {event.eventType === 'workshop' && (
+          <div style={{
+            position: 'absolute', top: '20px', left: '20px', zIndex: 4,
+            background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.4)',
+            color: 'var(--brand-emerald)', fontSize: '9px', fontWeight: 700,
+            padding: '4px 10px', borderRadius: '4px',
+            fontFamily: 'var(--font-mono)', letterSpacing: '1px'
+          }}>🪑 WORKSHOP</div>
+        )}
       </div>
     );
   }
@@ -545,6 +563,24 @@ export default function EventCard({ event, isFeatured, onClick }) {
         }}>
           {config.label}
         </div>
+        {event.eventType === 'online' && (
+          <div style={{
+            position: 'absolute', top: '12px', left: '12px', zIndex: 2,
+            background: 'rgba(0,255,255,0.12)', border: '1px solid rgba(0,255,255,0.35)',
+            color: 'var(--brand-cyan)', fontSize: '8px', fontWeight: 700,
+            padding: '3px 7px', borderRadius: '4px',
+            fontFamily: 'var(--font-mono)', letterSpacing: '1px'
+          }}>💻 ONLINE</div>
+        )}
+        {event.eventType === 'workshop' && (
+          <div style={{
+            position: 'absolute', top: '12px', left: '12px', zIndex: 2,
+            background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.35)',
+            color: 'var(--brand-emerald)', fontSize: '8px', fontWeight: 700,
+            padding: '3px 7px', borderRadius: '4px',
+            fontFamily: 'var(--font-mono)', letterSpacing: '1px'
+          }}>🪑 WORKSHOP</div>
+        )}
       </div>
 
       <div className="bento-card-content">

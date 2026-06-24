@@ -103,6 +103,15 @@ export default function Header({
   const [evtOnlinePrice, setEvtOnlinePrice] = useState(0);
   const [evtOnlineCapacity, setEvtOnlineCapacity] = useState(100);
   const [isEvtSubmitting, setIsEvtSubmitting] = useState(false);
+
+  const resetEventForm = () => {
+    setEvtTitle(''); setEvtDescription(''); setEvtCategory('concert');
+    setEvtDate(''); setEvtTime('19:30'); setEvtLocation(''); setEvtPriceRange('');
+    setEvtImage(''); setEvtBadge(''); setEvtTheme('cyberpunk');
+    setEvtZones(DEFAULT_ORGANIZER_ZONES);
+    setEvtEventType('live'); setEvtOnlineLink(''); setEvtPlatform(''); setEvtOnlinePwd('');
+    setEvtOnlineInstructions(''); setEvtOnlinePrice(0); setEvtOnlineCapacity(100);
+  };
   const [isImgUploading, setIsImgUploading] = useState(false);
   const imgInputRef = useRef(null);
   const timeInputRef = useRef(null);
@@ -229,7 +238,7 @@ export default function Header({
     if (!evtDate) missing.push('Ngày diễn ra');
     if (!evtTime) missing.push('Giờ diễn ra');
     if (!evtLocation) missing.push('Địa điểm');
-    if (!evtPriceRange) missing.push('Khoảng giá hiển thị');
+    if (evtEventType !== 'online' && !evtPriceRange) missing.push('Khoảng giá hiển thị');
     if (!evtImage) missing.push('Ảnh sự kiện');
 
     if (missing.length > 0) {
@@ -254,7 +263,9 @@ export default function Header({
           date: evtDate,
           time: evtTime,
           location: evtLocation,
-          priceRange: evtPriceRange,
+          priceRange: evtEventType === 'online'
+            ? `${Number(evtOnlinePrice).toLocaleString('vi-VN')}đ`
+            : evtPriceRange,
           image: evtImage,
           badge: evtBadge,
           theme: evtTheme,
@@ -600,7 +611,7 @@ export default function Header({
                 <button
                   onMouseEnter={() => setIsCreateHovered(true)}
                   onMouseLeave={() => setIsCreateHovered(false)}
-                  onClick={() => setModalType('create')}
+                  onClick={() => { resetEventForm(); setModalType('create'); }}
                   className="btn-create-event"
                   style={{ display: 'flex', alignItems: 'center', gap: '5px' }}
                 >
@@ -2243,17 +2254,18 @@ export default function Header({
                 </div>
 
                 <div style={{ display: 'flex', gap: '10px' }}>
+                  {evtEventType !== 'online' && (
                   <div className="edm-input-group" style={{ flex: 1 }}>
                     <label className="edm-input-label">Khoảng giá hiển thị *</label>
                     <input
                       type="text"
-                      required
                       value={evtPriceRange}
                       onChange={(e) => setEvtPriceRange(e.target.value)}
                       placeholder="Ví dụ: 500k - 2.5M"
                       className="edm-input-field-new"
                     />
                   </div>
+                  )}
                   <div className="edm-input-group" style={{ flex: 1 }}>
                     <label className="edm-input-label">Badge nổi bật</label>
                     <input
