@@ -216,6 +216,45 @@ export const cancelExpiredBookings = async (expiryMinutes = 30) => {
   return { cancelled };
 };
 
+export const getOrganizerStats = async (req, res) => {
+  const { organizerId } = req.query;
+  if (!organizerId) return res.status(400).json({ error: 'Thiếu organizerId' });
+  try {
+    const events = await Event.findAll({ where: { organizerId }, attributes: ['id', 'title', 'date', 'status', 'image', 'location'] });
+    const eventIds = events.map(e => e.id);
+    if (eventIds.length === 0) {
+      return res.json({ eventsCount: 0, totalBookings: 0, totalRevenue: 0, paidCount: 0, pendingCount: 0, bookings: [] });
+    }
+    const bookings = await Booking.findAll({
+      where: { eventId: { [Op.in]: eventIds } },
+      include: [
+        { model: Event, as: 'event', attributes: ['title'] },
+        { model: Zone, as: 'zone', attributes: ['name'] }
+      ],
+      order: [['createdAt', 'DESC']]
+    });
+    const paidBookings = bookings.filter(b => b.paymentStatus === 'Paid');
+    const totalRevenue = paidBookings.reduce((sum, b) => sum + parseFloat(b.totalPrice || 0), 0);
+    res.json({
+      eventsCount: events.length,
+      totalBookings: bookings.length,
+      totalRevenue,
+      paidCount: paidBookings.length,
+      pendingCount: bookings.filter(b => b.paymentStatus === 'Pending').length,
+      bookings: bookings.map(b => ({
+        id: b.id, ticketId: b.ticketId,
+        eventTitle: b.event?.title || '',
+        zoneName: b.zone?.name || '',
+        fullName: b.fullName, email: b.email, phone: b.phone,
+        count: b.count, seats: JSON.parse(b.seats || '[]'),
+        totalPrice: b.totalPrice, paymentStatus: b.paymentStatus, createdAt: b.createdAt
+      }))
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 export const getTakenSeats = async (req, res) => {
   const { zoneId } = req.query;
   if (!zoneId) return res.status(400).json({ error: 'Thiếu zoneId' });

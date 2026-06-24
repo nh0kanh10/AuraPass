@@ -33,7 +33,8 @@ export default function Header({
   openLoginTrigger,
   openWalletTrigger,
   showAlert,
-  showConfirm
+  showConfirm,
+  onNavigateAccount
 }) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
@@ -518,7 +519,7 @@ export default function Header({
             <button
               onMouseEnter={() => setIsMyTicketsHovered(true)}
               onMouseLeave={() => setIsMyTicketsHovered(false)}
-              onClick={() => setModalType('tickets')}
+              onClick={() => onNavigateAccount ? onNavigateAccount('tickets') : setModalType('tickets')}
               className="btn-my-tickets"
               style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
             >
@@ -584,16 +585,20 @@ export default function Header({
             <div className="user-nav-group">
               {currentUser ? (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <span style={{
-                    fontFamily: 'var(--font-mono)',
-                    fontSize: '11px',
-                    fontWeight: 700,
-                    color: 'var(--brand-cyan)',
-                    letterSpacing: '0.04em',
-                    textShadow: '0 0 12px oklch(70% 0.18 200 / 0.5)'
-                  }}>
+                  <button
+                    onClick={() => onNavigateAccount && onNavigateAccount('profile')}
+                    style={{
+                      background: 'none', border: 'none', cursor: onNavigateAccount ? 'pointer' : 'default',
+                      fontFamily: 'var(--font-mono)', fontSize: '11px', fontWeight: 700,
+                      color: 'var(--brand-cyan)', letterSpacing: '0.04em',
+                      textShadow: '0 0 12px oklch(70% 0.18 200 / 0.5)', padding: 0,
+                      transition: 'opacity 0.2s'
+                    }}
+                    onMouseEnter={e => { if (onNavigateAccount) e.currentTarget.style.opacity = '0.75'; }}
+                    onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+                  >
                     {currentUser.fullName.toUpperCase()} {currentUser.role === 'organizer' && '(BAN TỔ CHỨC)'} {currentUser.role === 'admin' && '(ADMIN)'}
-                  </span>
+                  </button>
                   <button
                     onClick={() => setCurrentUser(null)}
                     className="btn-logout"

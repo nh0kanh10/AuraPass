@@ -14,6 +14,7 @@ import Footer from './components/Footer';
 import { Grid, Calendar, MapPin, Sparkles, Filter, ChevronUp } from 'lucide-react';
 import CreatorsExplorePage from './components/CreatorsExplorePage';
 import MusicPlayer from './components/MusicPlayer';
+import AccountPage from './components/AccountPage';
 import './App.css';
 
 function App() {
@@ -46,6 +47,13 @@ function App() {
 
   const [openLoginTrigger, setOpenLoginTrigger] = useState(0);
   const [openWalletTrigger, setOpenWalletTrigger] = useState(0);
+  const [initialAccountTab, setInitialAccountTab] = useState('profile');
+
+  const navigateToAccount = (tab = 'profile') => {
+    setInitialAccountTab(tab);
+    setCurrentView('account');
+    window.scrollTo({ top: 0, behavior: 'auto' });
+  };
   const [userTickets, setUserTickets] = useState([]);
   const [popup, setPopup] = useState(null);
 
@@ -467,6 +475,7 @@ function App() {
           openWalletTrigger={openWalletTrigger}
           showAlert={showAlert}
           showConfirm={showConfirm}
+          onNavigateAccount={navigateToAccount}
         />
 
         <main style={{ flexGrow: 1 }}>
@@ -476,6 +485,19 @@ function App() {
           )}
 
           {currentView === 'creators' && <CreatorsExplorePage creators={creators} onBack={() => { setCurrentView('home'); window.scrollTo({ top: 0, behavior: 'auto' }); }} />}
+
+          {currentView === 'account' && currentUser && (
+            <AccountPage
+              currentUser={currentUser}
+              setCurrentUser={setCurrentUser}
+              userTickets={userTickets}
+              fetchUserTickets={fetchUserTickets}
+              showAlert={showAlert}
+              showConfirm={showConfirm}
+              onBack={() => { setCurrentView('home'); window.scrollTo({ top: 0, behavior: 'auto' }); }}
+              fetchResaleTickets={fetchResaleTickets}
+              initialTab={initialAccountTab}
+            />}
 
           <div style={{
             width: '100%',

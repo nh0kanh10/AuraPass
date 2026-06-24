@@ -147,6 +147,36 @@ export const createAdminUser = async (req, res) => {
   }
 };
 
+export const updateProfile = async (req, res) => {
+  const { fullName, email, phone } = req.body;
+  try {
+    const user = await User.findByPk(req.params.id);
+    if (!user) return res.status(404).json({ error: 'Không tìm thấy người dùng' });
+    if (fullName !== undefined) user.fullName = fullName;
+    if (email !== undefined) user.email = email;
+    if (phone !== undefined) user.phone = phone;
+    await user.save();
+    res.json({ id: user.id, username: user.username, email: user.email, fullName: user.fullName, phone: user.phone, role: user.role });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+export const changePassword = async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+  try {
+    const user = await User.findByPk(req.params.id);
+    if (!user) return res.status(404).json({ error: 'Không tìm thấy người dùng' });
+    if (user.password !== currentPassword) return res.status(400).json({ error: 'Mật khẩu hiện tại không đúng' });
+    if (!newPassword || newPassword.length < 6) return res.status(400).json({ error: 'Mật khẩu mới phải có ít nhất 6 ký tự' });
+    user.password = newPassword;
+    await user.save();
+    res.json({ message: 'Đổi mật khẩu thành công' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 export const updateUserPassword = async (req, res) => {
   const { newPassword } = req.body;
   try {
