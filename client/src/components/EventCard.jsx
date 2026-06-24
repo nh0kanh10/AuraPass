@@ -1,4 +1,5 @@
 import React from 'react';
+import { Monitor, Users } from 'lucide-react';
 
 export default function EventCard({ event, isFeatured, onClick }) {
   const getCategoryConfig = (cat) => {
@@ -569,8 +570,9 @@ export default function EventCard({ event, isFeatured, onClick }) {
             background: 'rgba(0,255,255,0.12)', border: '1px solid rgba(0,255,255,0.35)',
             color: 'var(--brand-cyan)', fontSize: '8px', fontWeight: 700,
             padding: '3px 7px', borderRadius: '4px',
-            fontFamily: 'var(--font-mono)', letterSpacing: '1px'
-          }}>💻 ONLINE</div>
+            fontFamily: 'var(--font-mono)', letterSpacing: '1px',
+            display: 'flex', alignItems: 'center', gap: '4px'
+          }}><Monitor size={9} strokeWidth={2.5} /> ONLINE</div>
         )}
         {event.eventType === 'workshop' && (
           <div style={{
@@ -578,8 +580,9 @@ export default function EventCard({ event, isFeatured, onClick }) {
             background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.35)',
             color: 'var(--brand-emerald)', fontSize: '8px', fontWeight: 700,
             padding: '3px 7px', borderRadius: '4px',
-            fontFamily: 'var(--font-mono)', letterSpacing: '1px'
-          }}>🪑 WORKSHOP</div>
+            fontFamily: 'var(--font-mono)', letterSpacing: '1px',
+            display: 'flex', alignItems: 'center', gap: '4px'
+          }}><Users size={9} strokeWidth={2.5} /> WORKSHOP</div>
         )}
       </div>
 

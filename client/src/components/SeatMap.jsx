@@ -341,6 +341,21 @@ export default function SeatMap({ event, onBack, onProceedCheckout, showAlert })
     const seatedZones = normalizedZones.filter(z => !z.isStanding);
     const standingZones = normalizedZones.filter(z => z.isStanding);
 
+    if (seatedZones.length === 0 && standingZones.length === 0) {
+      return (
+        <div className="seatmap-outer-wrapper" style={{ padding: '40px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '16px', minHeight: '300px' }}>
+          <button onClick={onBack} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: '12px', fontFamily: 'var(--font-mono)', padding: 0, alignSelf: 'flex-start', marginBottom: '16px' }}>
+            <ArrowLeft size={14} /> QUAY LẠI
+          </button>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: '32px', marginBottom: '12px' }}>🪑</div>
+            <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '6px' }}>Sự kiện chưa cấu hình chỗ ngồi</div>
+            <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Ban tổ chức chưa thêm phân khu vé cho sự kiện này.</div>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="seatmap-outer-wrapper" style={{ padding: '28px 16px 120px', display: 'flex', flexDirection: 'column', gap: '0' }}>
 
