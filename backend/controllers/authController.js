@@ -1,4 +1,4 @@
-import { User, Ticket, Booking, ResaleTicket, sequelize } from '../models/index.js';
+import { User, Ticket, Booking, ResaleTicket, Creator, sequelize } from '../models/index.js';
 
 export const login = async (req, res) => {
   const { username, password } = req.body;
@@ -63,7 +63,7 @@ export const updateUserRole = async (req, res) => {
   try {
     const user = await User.findByPk(req.params.id);
     if (!user) return res.status(404).json({ error: 'Không tìm thấy người dùng' });
-    
+
     if (user.role === 'client') {
       user.role = 'organizer';
     } else if (user.role === 'organizer') {
@@ -71,7 +71,7 @@ export const updateUserRole = async (req, res) => {
     } else {
       user.role = 'client';
     }
-    
+
     await user.save();
     res.json({
       id: user.id,
@@ -106,21 +106,34 @@ export const deleteUser = async (req, res) => {
 };
 
 export const createAdminUser = async (req, res) => {
-  const { username, password, email, fullName, phone, role } = req.body;
+  const { username, password, email, fullName, phone, role, creatorId } = req.body;
+  const t = await sequelize.transaction();
   try {
-    const existing = await User.findOne({ where: { username } });
+    const existing = await User.findOne({ where: { username } }, { transaction: t });
     if (existing) {
+      await t.rollback();
       return res.status(400).json({ error: 'Tên đăng nhập đã tồn tại' });
     }
+    const userId = `user-${Date.now()}`;
     const newUser = await User.create({
-      id: `user-${Date.now()}`,
+      id: userId,
       username,
       password,
       email,
       fullName,
       phone,
       role: role || 'client'
-    });
+    }, { transaction: t });
+
+    if (role === 'organizer' && creatorId && creatorId !== '') {
+      const creator = await Creator.findByPk(creatorId, { transaction: t });
+      if (creator) {
+        creator.userId = userId;
+        await creator.save({ transaction: t });
+      }
+    }
+
+    await t.commit();
     res.status(201).json({
       id: newUser.id,
       username: newUser.username,
@@ -129,6 +142,7 @@ export const createAdminUser = async (req, res) => {
       role: newUser.role
     });
   } catch (error) {
+    await t.rollback();
     res.status(500).json({ error: error.message });
   }
 };

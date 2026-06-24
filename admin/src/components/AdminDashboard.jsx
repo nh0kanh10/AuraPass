@@ -406,6 +406,7 @@ export default function AdminDashboard({
   const [newFullName, setNewFullName] = useState('');
   const [newPhone, setNewPhone] = useState('');
   const [newRole, setNewRole] = useState('client');
+  const [selectedCreatorId, setSelectedCreatorId] = useState('');
 
   const showAlert = (message, title = 'Thông báo') => {
     return new Promise((resolve) => {
@@ -633,12 +634,13 @@ export default function AdminDashboard({
           email: newEmail,
           fullName: newFullName,
           phone: newPhone,
-          role: newRole
+          role: newRole,
+          creatorId: newRole === 'organizer' ? selectedCreatorId : ''
         })
       });
       if (!res.ok) {
         const err = await res.json();
-        await showAlert(err.error || 'Cấp tài khoản thất bại');
+        await showAlert(err.error || 'Cập tài khoản thất bại');
         return;
       }
       await showAlert('Cấp tài khoản người dùng thành công!');
@@ -650,6 +652,7 @@ export default function AdminDashboard({
       setNewFullName('');
       setNewPhone('');
       setNewRole('client');
+      setSelectedCreatorId('');
       await fetchAllData();
     } catch (err) {
       console.error(err);
@@ -3882,6 +3885,23 @@ export default function AdminDashboard({
                           ]} 
                         />
                       </div>
+
+                      {newRole === 'organizer' && (
+                        <div className="admin-form-group">
+                          <label className="admin-form-label">Liên kết Đối tác/Nghệ sĩ</label>
+                          <select
+                            value={selectedCreatorId}
+                            onChange={(e) => setSelectedCreatorId(e.target.value)}
+                            className="admin-form-input"
+                            style={{ background: '#0b0b0f', color: '#fff', border: '1px solid rgba(255,255,255,0.1)', height: '38px', borderRadius: '6px', width: '100%', padding: '0 8px' }}
+                          >
+                            <option value="">-- Không gán (Tạo sau) --</option>
+                            {creators.map(c => (
+                              <option key={c.id} value={c.id}>{c.name} ({c.type || 'Nghệ sĩ'})</option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
                     </div>
                     <div className="custom-popup-actions" style={{ marginTop: '24px' }}>
                       <button 
@@ -3896,6 +3916,7 @@ export default function AdminDashboard({
                           setNewFullName('');
                           setNewPhone('');
                           setNewRole('client');
+                          setSelectedCreatorId('');
                         }}
                       >
                         Hủy
