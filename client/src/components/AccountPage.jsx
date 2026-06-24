@@ -165,6 +165,9 @@ export default function AccountPage({
   const [evtOnlineLink, setEvtOnlineLink] = useState('');
   const [evtPlatform, setEvtPlatform] = useState('');
   const [evtOnlinePwd, setEvtOnlinePwd] = useState('');
+  const [evtOnlineInstructions, setEvtOnlineInstructions] = useState('');
+  const [evtOnlinePrice, setEvtOnlinePrice] = useState(0);
+  const [evtOnlineCapacity, setEvtOnlineCapacity] = useState(100);
   const [submittingEvt, setSubmittingEvt] = useState(false);
   const [uploadingImg, setUploadingImg] = useState(false);
   const imgRef = useRef(null);
@@ -214,6 +217,7 @@ export default function AccountPage({
     setEvtPriceRange(''); setEvtImage(''); setEvtBadge('');
     setEvtTheme('cyberpunk'); setEvtZones(DEFAULT_ZONES);
     setEvtEventType('live'); setEvtOnlineLink(''); setEvtPlatform(''); setEvtOnlinePwd('');
+    setEvtOnlineInstructions(''); setEvtOnlinePrice(0); setEvtOnlineCapacity(100);
     setShowEvtForm(true);
   };
 
@@ -234,6 +238,11 @@ export default function AccountPage({
     setEvtOnlineLink(event.onlineLink || '');
     setEvtPlatform(event.platform || '');
     setEvtOnlinePwd(event.onlinePassword || '');
+    setEvtOnlineInstructions(event.onlineInstructions || '');
+    if (event.eventType === 'online' && event.zones?.[0]) {
+      setEvtOnlinePrice(event.zones[0].price || 0);
+      setEvtOnlineCapacity(event.zones[0].availableTickets || 100);
+    }
     setShowEvtForm(true);
   };
 
@@ -258,12 +267,16 @@ export default function AccountPage({
             title: evtTitle, description: evtDesc, category: evtCategory,
             date: evtDate, time: evtTime, location: evtLocation, priceRange: evtPriceRange,
             image: evtImage, badge: evtBadge, theme: evtTheme,
-            zones: normalizeZones(evtZones), organizerId: currentUser.id,
+            zones: evtEventType === 'online'
+              ? [{ id: `zone-online-${Date.now()}`, name: 'Vé tham dự trực tuyến', price: Number(evtOnlinePrice) || 0, isStanding: true, availableTickets: Number(evtOnlineCapacity) || 100, rows: null, cols: null }]
+              : normalizeZones(evtZones),
+            organizerId: currentUser.id,
             status: isEdit ? editingEvt.status : 'pending',
             eventType: evtEventType,
             onlineLink: evtEventType === 'online' ? evtOnlineLink : null,
             platform: evtEventType === 'online' ? evtPlatform : null,
-            onlinePassword: evtEventType === 'online' ? evtOnlinePwd : null
+            onlinePassword: evtEventType === 'online' ? evtOnlinePwd : null,
+            onlineInstructions: evtEventType === 'online' ? evtOnlineInstructions : null
           })
         }
       );
@@ -531,6 +544,12 @@ export default function AccountPage({
                                 <code style={{ fontSize: '12px', color: 'var(--text-primary)', fontFamily: 'var(--font-mono)', background: 'rgba(255,255,255,0.06)', padding: '1px 6px', borderRadius: '4px' }}>
                                   {ticket.onlinePassword}
                                 </code>
+                              </div>
+                            )}
+                            {ticket.onlineInstructions && (
+                              <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid rgba(0,255,255,0.12)' }}>
+                                <div style={{ fontSize: '10px', fontFamily: 'var(--font-mono)', color: 'var(--brand-cyan)', letterSpacing: '0.07em', marginBottom: '5px' }}>HƯỚNG DẪN THAM GIA</div>
+                                <pre style={{ fontSize: '11px', color: 'var(--text-muted)', margin: 0, whiteSpace: 'pre-wrap', fontFamily: 'inherit', lineHeight: 1.6 }}>{ticket.onlineInstructions}</pre>
                               </div>
                             )}
                           </div>
@@ -907,11 +926,25 @@ export default function AccountPage({
                       Link sẽ bị ẩn với công khai — chỉ hiện sau khi khán giả thanh toán thành công.
                     </p>
                   </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                    <div>
+                      <label style={labelSt}>Giá vé (VNĐ) *</label>
+                      <input style={inputSt} type="number" min="0" value={evtOnlinePrice} onChange={e => setEvtOnlinePrice(e.target.value)} placeholder="500000" />
+                    </div>
+                    <div>
+                      <label style={labelSt}>Số lượng tối đa *</label>
+                      <input style={inputSt} type="number" min="1" value={evtOnlineCapacity} onChange={e => setEvtOnlineCapacity(e.target.value)} placeholder="100" />
+                    </div>
+                  </div>
+                  <div>
+                    <label style={labelSt}>Hướng dẫn tham gia</label>
+                    <textarea style={{ ...inputSt, resize: 'vertical', minHeight: '72px', fontFamily: 'inherit' }} rows={3} value={evtOnlineInstructions} onChange={e => setEvtOnlineInstructions(e.target.value)} placeholder={'1. Nhấp vào link bên dưới\n2. Nhập mật khẩu phòng (nếu có)\n3. Vào phòng trước 5 phút...'} />
+                  </div>
                 </div>
               )}
 
               {/* Zones */}
-              <div>
+              {evtEventType !== 'online' && <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                   <label style={{ ...labelSt, margin: 0 }}>Khu vực / Loại vé</label>
                   <button
@@ -953,7 +986,7 @@ export default function AccountPage({
                     </div>
                   ))}
                 </div>
-              </div>
+              </div>}
 
               <div style={{ display: 'flex', gap: '10px', paddingTop: '6px' }}>
                 <button type="submit" style={{ ...btnPrimSt, flex: 2 }} disabled={submittingEvt}>

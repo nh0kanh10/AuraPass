@@ -99,6 +99,9 @@ export default function Header({
   const [evtOnlineLink, setEvtOnlineLink] = useState('');
   const [evtPlatform, setEvtPlatform] = useState('');
   const [evtOnlinePwd, setEvtOnlinePwd] = useState('');
+  const [evtOnlineInstructions, setEvtOnlineInstructions] = useState('');
+  const [evtOnlinePrice, setEvtOnlinePrice] = useState(0);
+  const [evtOnlineCapacity, setEvtOnlineCapacity] = useState(100);
   const [isEvtSubmitting, setIsEvtSubmitting] = useState(false);
   const [isImgUploading, setIsImgUploading] = useState(false);
   const imgInputRef = useRef(null);
@@ -151,6 +154,11 @@ export default function Header({
     setEvtOnlineLink(event.onlineLink || '');
     setEvtPlatform(event.platform || '');
     setEvtOnlinePwd(event.onlinePassword || '');
+    setEvtOnlineInstructions(event.onlineInstructions || '');
+    if (event.eventType === 'online' && event.zones?.[0]) {
+      setEvtOnlinePrice(event.zones[0].price || 0);
+      setEvtOnlineCapacity(event.zones[0].availableTickets || 100);
+    }
     setModalType('edit-event');
   };
 
@@ -250,14 +258,17 @@ export default function Header({
           image: evtImage,
           badge: evtBadge,
           theme: evtTheme,
-          zones: normalizeOrganizerZones(evtZones),
+          zones: evtEventType === 'online'
+            ? [{ id: `zone-online-${Date.now()}`, name: 'Vé tham dự trực tuyến', price: Number(evtOnlinePrice) || 0, isStanding: true, availableTickets: Number(evtOnlineCapacity) || 100, rows: null, cols: null }]
+            : normalizeOrganizerZones(evtZones),
           organizerId: currentUser ? currentUser.id : null,
           creatorId: myCreator ? myCreator.id : (isEdit ? editingEvent.creatorId : null),
           status: isEdit ? editingEvent.status : 'pending',
           eventType: evtEventType,
           onlineLink: evtEventType === 'online' ? evtOnlineLink : null,
           platform: evtEventType === 'online' ? evtPlatform : null,
-          onlinePassword: evtEventType === 'online' ? evtOnlinePwd : null
+          onlinePassword: evtEventType === 'online' ? evtOnlinePwd : null,
+          onlineInstructions: evtEventType === 'online' ? evtOnlineInstructions : null
         })
       });
 
@@ -290,6 +301,9 @@ export default function Header({
       setEvtOnlineLink('');
       setEvtPlatform('');
       setEvtOnlinePwd('');
+      setEvtOnlineInstructions('');
+      setEvtOnlinePrice(0);
+      setEvtOnlineCapacity(100);
       fetchMyEvents();
     } catch (err) {
       console.error(err);
@@ -2289,6 +2303,20 @@ export default function Header({
                       <input className="edm-input-field-new" value={evtOnlineLink} onChange={e => setEvtOnlineLink(e.target.value)} placeholder="https://zoom.us/j/..." />
                       <p style={{ fontSize: '11px', color: 'var(--text-muted)', margin: '5px 0 0', fontStyle: 'italic' }}>Link bị ẩn công khai — chỉ hiện sau khi khán giả thanh toán.</p>
                     </div>
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                      <div style={{ flex: 1 }}>
+                        <label className="edm-input-label">Giá vé (VNĐ) *</label>
+                        <input className="edm-input-field-new" type="number" min="0" value={evtOnlinePrice} onChange={e => setEvtOnlinePrice(e.target.value)} placeholder="500000" />
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <label className="edm-input-label">Số lượng tối đa *</label>
+                        <input className="edm-input-field-new" type="number" min="1" value={evtOnlineCapacity} onChange={e => setEvtOnlineCapacity(e.target.value)} placeholder="100" />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="edm-input-label">Hướng dẫn tham gia</label>
+                      <textarea className="edm-input-field-new" rows={3} value={evtOnlineInstructions} onChange={e => setEvtOnlineInstructions(e.target.value)} placeholder={'1. Nhấp vào link bên dưới\n2. Nhập mật khẩu phòng (nếu có)\n3. Vào phòng trước 5 phút...'} style={{ resize: 'vertical', minHeight: '72px', fontFamily: 'inherit' }} />
+                    </div>
                   </div>
                 )}
 
@@ -2358,7 +2386,7 @@ export default function Header({
                   )}
                 </div>
 
-                <div className="evt-zones-section">
+                {evtEventType !== 'online' && <div className="evt-zones-section">
                   <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'10px'}}>
                     <span className="evt-zones-title">CẤU HÌNH PHÂN KHU VÉ</span>
                     <button
@@ -2446,7 +2474,7 @@ export default function Header({
                     </div>
                   ))}
                   <span style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: 1.5, marginTop:'6px' }}>* Khu đứng chỉ nhập tổng số vé. Khu ghế ngồi tự tính tổng ghế bằng Số hàng × Ghế mỗi hàng. Giới hạn tối đa 3 phân khu.</span>
-                </div>
+                </div>}
 
                 <button type="submit" disabled={isEvtSubmitting} className="edm-btn-action" style={{ marginTop: '6px' }}>
                   {isEvtSubmitting ? 'ĐANG GỬI YÊU CẦU...' : 'GỬI YÊU CẦU DUYỆT SỰ KIỆN'}

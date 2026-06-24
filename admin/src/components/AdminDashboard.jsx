@@ -478,6 +478,9 @@ export default function AdminDashboard({
   const [eventOnlineLink, setEventOnlineLink] = useState('');
   const [eventPlatform, setEventPlatform] = useState('');
   const [eventOnlinePassword, setEventOnlinePassword] = useState('');
+  const [eventOnlineInstructions, setEventOnlineInstructions] = useState('');
+  const [eventOnlinePrice, setEventOnlinePrice] = useState(0);
+  const [eventOnlineCapacity, setEventOnlineCapacity] = useState(100);
 
   const [eventZones, setEventZones] = useState([]);
   const [newZoneName, setNewZoneName] = useState('');
@@ -812,6 +815,11 @@ export default function AdminDashboard({
     setEventOnlineLink(event.onlineLink || '');
     setEventPlatform(event.platform || '');
     setEventOnlinePassword(event.onlinePassword || '');
+    setEventOnlineInstructions(event.onlineInstructions || '');
+    if (event.eventType === 'online' && event.zones?.[0]) {
+      setEventOnlinePrice(event.zones[0].price || 0);
+      setEventOnlineCapacity(event.zones[0].availableTickets || 100);
+    }
   };
 
   const handleCreateNewEventClick = () => {
@@ -833,6 +841,9 @@ export default function AdminDashboard({
     setEventOnlineLink('');
     setEventPlatform('');
     setEventOnlinePassword('');
+    setEventOnlineInstructions('');
+    setEventOnlinePrice(0);
+    setEventOnlineCapacity(100);
     setEventZones([
       { id: `zone-vip-${Date.now()}`, name: 'Khu VIP Lầu 1', price: 3000000, isStanding: false, availableTickets: 10, rows: 2, cols: 5 },
       { id: `zone-ga-${Date.now()}`, name: 'Khu Đứng GA', price: 500000, isStanding: true, availableTickets: 300, rows: null, cols: null }
@@ -859,12 +870,15 @@ export default function AdminDashboard({
       theme: eventTheme,
       isFeatured: eventIsFeatured,
       isTrending: eventIsTrending,
-      zones: eventZones,
+      zones: eventEventType === 'online'
+        ? [{ id: `zone-online-${Date.now()}`, name: 'Vé tham dự trực tuyến', price: Number(eventOnlinePrice) || 0, isStanding: true, availableTickets: Number(eventOnlineCapacity) || 100, rows: null, cols: null }]
+        : eventZones,
       creatorId: eventCreatorId || null,
       eventType: eventEventType,
       onlineLink: eventEventType === 'online' ? eventOnlineLink : null,
       platform: eventEventType === 'online' ? eventPlatform : null,
-      onlinePassword: eventEventType === 'online' ? eventOnlinePassword : null
+      onlinePassword: eventEventType === 'online' ? eventOnlinePassword : null,
+      onlineInstructions: eventEventType === 'online' ? eventOnlineInstructions : null
     };
 
     setLoadingSaveEvent(true);
@@ -2820,6 +2834,20 @@ export default function AdminDashboard({
                         <label className="admin-form-label">Link tham gia *</label>
                         <input type="text" value={eventOnlineLink} onChange={e => setEventOnlineLink(e.target.value)} placeholder="https://zoom.us/j/..." className="admin-form-input" />
                       </div>
+                      <div className="form-grid-2">
+                        <div className="admin-form-group" style={{ margin: 0 }}>
+                          <label className="admin-form-label">Giá vé (VNĐ) *</label>
+                          <input type="number" min="0" value={eventOnlinePrice} onChange={e => setEventOnlinePrice(e.target.value)} placeholder="500000" className="admin-form-input" />
+                        </div>
+                        <div className="admin-form-group" style={{ margin: 0 }}>
+                          <label className="admin-form-label">Số lượng tham gia tối đa *</label>
+                          <input type="number" min="1" value={eventOnlineCapacity} onChange={e => setEventOnlineCapacity(e.target.value)} placeholder="100" className="admin-form-input" />
+                        </div>
+                      </div>
+                      <div className="admin-form-group" style={{ margin: 0 }}>
+                        <label className="admin-form-label">Hướng dẫn tham gia</label>
+                        <textarea rows={3} value={eventOnlineInstructions} onChange={e => setEventOnlineInstructions(e.target.value)} placeholder="1. Nhấp vào link bên dưới&#10;2. Nhập mật khẩu phòng (nếu có)&#10;3. Vào phòng trước 5 phút..." className="admin-form-textarea" />
+                      </div>
                       <p style={{ margin: 0, fontSize: '11px', color: 'rgba(255,255,255,0.4)', lineHeight: 1.5 }}>
                         🔒 Link bị ẩn công khai — chỉ hiển thị cho người mua sau khi thanh toán thành công.
                       </p>
@@ -2878,7 +2906,7 @@ export default function AdminDashboard({
                     />
                   </div>
 
-                  <div style={{ borderTop: '1px solid var(--glass-border)', paddingTop: '20px', marginTop: '20px' }}>
+                  {eventEventType !== 'online' && (<div style={{ borderTop: '1px solid var(--glass-border)', paddingTop: '20px', marginTop: '20px' }}>
                     <h4 style={{ color: 'var(--text-white)', fontSize: '15px', fontFamily: 'var(--font-display)', margin: '0 0 16px 0' }}>
                       Cấu Hình Phân Khu Vé ({eventZones.length}/3)
                     </h4>
@@ -3007,12 +3035,12 @@ export default function AdminDashboard({
                         </div>
                       ))}
                     </div>
-                  </div>
+                  </div>)}
 
                   <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', borderTop: '1px solid var(--glass-border)', paddingTop: '20px' }}>
-                    <button 
-                      type="button" 
-                      onClick={() => setEditingEventId(null)} 
+                    <button
+                      type="button"
+                      onClick={() => setEditingEventId(null)}
                       className="btn-secondary" 
                       style={{ padding: '10px 24px', borderRadius: '8px', cursor: 'pointer' }}
                     >

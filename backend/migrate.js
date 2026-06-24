@@ -13,7 +13,10 @@ const migrations = [
    ALTER TABLE Events ADD platform NVARCHAR(100) NULL`,
 
   `IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='Events' AND COLUMN_NAME='onlinePassword')
-   ALTER TABLE Events ADD onlinePassword NVARCHAR(255) NULL`
+   ALTER TABLE Events ADD onlinePassword NVARCHAR(255) NULL`,
+
+  `IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='Events' AND COLUMN_NAME='onlineInstructions')
+   ALTER TABLE Events ADD onlineInstructions NVARCHAR(2000) NULL`
 ];
 
 (async () => {

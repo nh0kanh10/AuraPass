@@ -69,6 +69,9 @@ const Event = sequelize.define('Event', {
   },
   onlinePassword: {
     type: DataTypes.STRING(255)
+  },
+  onlineInstructions: {
+    type: DataTypes.STRING(2000)
   }
 }, {
   tableName: 'Events',
