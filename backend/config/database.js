@@ -12,6 +12,7 @@ const sequelize = new Sequelize(
     port: parseInt(process.env.DB_PORT, 10) || 1433,
     dialect: 'mssql',
     logging: false,
+    timezone: '+07:00',
     dialectOptions: {
       options: {
         encrypt: false,
