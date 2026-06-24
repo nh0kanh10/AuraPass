@@ -187,8 +187,12 @@ export const deleteBooking = async (req, res) => {
 
 export const cancelExpiredBookings = async (expiryMinutes = 30) => {
   const cutoff = new Date(Date.now() - expiryMinutes * 60 * 1000);
+  const cutoffStr = cutoff.toISOString().replace('T', ' ').slice(0, 23);
   const expired = await Booking.findAll({
-    where: { paymentStatus: 'Pending', createdAt: { [Op.lt]: cutoff } }
+    where: {
+      paymentStatus: 'Pending',
+      createdAt: { [Op.lt]: sequelize.literal(`CAST('${cutoffStr}' AS DATETIME2)`) }
+    }
   });
   if (expired.length === 0) return { cancelled: 0 };
   let cancelled = 0;
