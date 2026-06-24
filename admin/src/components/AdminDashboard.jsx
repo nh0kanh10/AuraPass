@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   LayoutDashboard, Calendar, Ticket, User, Users, PlusCircle, Trash2, 
   Edit, Check, X, RefreshCw, BarChart2, DollarSign, Package, Activity, 
@@ -8,11 +9,12 @@ import {
 
 function CustomSelect({ label, value, onChange, options, placeholder = '-- Chọn --', small = false }) {
   const [isOpen, setIsOpen] = useState(false);
-  const selectRef = useRef(null);
+  const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0, width: 0 });
+  const triggerRef = useRef(null);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (selectRef.current && !selectRef.current.contains(event.target)) {
+      if (triggerRef.current && !triggerRef.current.contains(event.target)) {
         setIsOpen(false);
       }
     };
@@ -20,44 +22,59 @@ function CustomSelect({ label, value, onChange, options, placeholder = '-- Chọ
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  const handleOpen = () => {
+    if (!isOpen && triggerRef.current) {
+      const rect = triggerRef.current.getBoundingClientRect();
+      setDropdownPos({ top: rect.bottom + 4, left: rect.left, width: rect.width });
+    }
+    setIsOpen(prev => !prev);
+  };
+
   const selectedOption = options.find(opt => opt.value === value);
 
   return (
-    <div className="admin-custom-select-container" ref={selectRef}>
+    <div className="admin-custom-select-container" ref={triggerRef}>
       {label && (
-        <label 
-          className="admin-form-label" 
+        <label
+          className="admin-form-label"
           style={small ? { fontSize: '11px', marginBottom: '8px' } : {}}
         >
           {label}
         </label>
       )}
-      <div 
+      <div
         className={`admin-custom-select-trigger ${isOpen ? 'active' : ''}`}
         style={small ? { padding: '8px 12px', minHeight: '38px', fontSize: '13.5px' } : {}}
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={handleOpen}
       >
         <span>{selectedOption ? selectedOption.label : placeholder}</span>
-        <svg 
+        <svg
           className={`select-arrow-icon ${isOpen ? 'open' : ''}`}
-          width="12" 
-          height="12" 
-          viewBox="0 0 24 24" 
-          fill="none" 
-          stroke="currentColor" 
-          strokeWidth="2"
+          width="12" height="12" viewBox="0 0 24 24"
+          fill="none" stroke="currentColor" strokeWidth="2"
         >
           <path d="m6 9 6 6 6-6" />
         </svg>
       </div>
-      {isOpen && (
-        <ul className="admin-custom-select-options">
+      {isOpen && createPortal(
+        <ul
+          className="admin-custom-select-options"
+          style={{
+            position: 'fixed',
+            top: dropdownPos.top,
+            left: dropdownPos.left,
+            width: dropdownPos.width,
+            zIndex: 99999,
+            margin: 0,
+          }}
+        >
           {options.map((opt) => (
-            <li 
-              key={opt.value} 
+            <li
+              key={opt.value}
               className={`admin-custom-select-option ${value === opt.value ? 'selected' : ''}`}
               style={small ? { padding: '8px 12px', fontSize: '13.5px' } : {}}
-              onClick={() => {
+              onMouseDown={(e) => {
+                e.preventDefault();
                 onChange(opt.value);
                 setIsOpen(false);
               }}
@@ -65,7 +82,8 @@ function CustomSelect({ label, value, onChange, options, placeholder = '-- Chọ
               {opt.label}
             </li>
           ))}
-        </ul>
+        </ul>,
+        document.body
       )}
     </div>
   );
@@ -504,6 +522,18 @@ export default function AdminDashboard({
   const [creatorLimit, setCreatorLimit] = useState(5);
   const [expiryMinutes, setExpiryMinutes] = useState(30);
   const [expiryLoading, setExpiryLoading] = useState(false);
+  
+  // Loading states
+  const [loadingEventAction, setLoadingEventAction] = useState(null); // null, or eventId
+  const [loadingSaveEvent, setLoadingSaveEvent] = useState(false);
+  const [loadingImageUpload, setLoadingImageUpload] = useState(false);
+  const [loadingCreatorAction, setLoadingCreatorAction] = useState(null);
+  const [loadingSaveCreator, setLoadingSaveCreator] = useState(false);
+  const [loadingUserAction, setLoadingUserAction] = useState(null);
+  const [loadingSaveUser, setLoadingSaveUser] = useState(false);
+  const [loadingChangePassword, setLoadingChangePassword] = useState(false);
+  const [loadingBookingAction, setLoadingBookingAction] = useState(null);
+  const [loadingResaleAction, setLoadingResaleAction] = useState(null);
 
   const totalRevenue = bookings
     .filter(b => b.paymentStatus === 'Paid')
@@ -584,6 +614,7 @@ export default function AdminDashboard({
   const handleToggleUserRole = async (userId) => {
     const isConfirmed = await showConfirm("Bạn có chắc chắn muốn thay đổi vai trò của tài khoản này?");
     if (isConfirmed) {
+      setLoadingUserAction(userId);
       try {
         const res = await fetch(`http://localhost:5000/api/admin/users/${userId}/role`, {
           method: 'PUT'
@@ -597,6 +628,8 @@ export default function AdminDashboard({
       } catch (err) {
         console.error(err);
         await showAlert('Lỗi kết nối API cập nhật vai trò');
+      } finally {
+        setLoadingUserAction(null);
       }
     }
   };
@@ -604,6 +637,7 @@ export default function AdminDashboard({
   const handleDeleteUser = async (userId) => {
     const isConfirmed = await showConfirm("Bạn có chắc chắn muốn xóa tài khoản này? Việc này sẽ xóa toàn bộ vé (tickets) và đơn đặt hàng (bookings) liên quan.");
     if (isConfirmed) {
+      setLoadingUserAction(userId);
       try {
         const res = await fetch(`http://localhost:5000/api/admin/users/${userId}`, {
           method: 'DELETE'
@@ -617,6 +651,8 @@ export default function AdminDashboard({
       } catch (err) {
         console.error(err);
         await showAlert('Lỗi kết nối API xóa tài khoản');
+      } finally {
+        setLoadingUserAction(null);
       }
     }
   };
@@ -631,6 +667,7 @@ export default function AdminDashboard({
       await showAlert('Mật khẩu xác nhận không khớp');
       return;
     }
+    setLoadingSaveUser(true);
     try {
       const res = await fetch('http://localhost:5000/api/admin/users', {
         method: 'POST',
@@ -664,6 +701,8 @@ export default function AdminDashboard({
     } catch (err) {
       console.error(err);
       await showAlert('Lỗi kết nối API cấp tài khoản');
+    } finally {
+      setLoadingSaveUser(false);
     }
   };
 
@@ -677,6 +716,7 @@ export default function AdminDashboard({
       await showAlert('Mật khẩu xác nhận không khớp');
       return;
     }
+    setLoadingChangePassword(true);
     try {
       const res = await fetch(`http://localhost:5000/api/admin/users/${changePasswordUserId}/password`, {
         method: 'PUT',
@@ -696,12 +736,15 @@ export default function AdminDashboard({
     } catch (err) {
       console.error(err);
       await showAlert('Lỗi kết nối API đổi mật khẩu');
+    } finally {
+      setLoadingChangePassword(false);
     }
   };
 
   const handleImageUpload = async (e, setImageUrl) => {
     const file = e.target.files[0];
     if (!file) return;
+    setLoadingImageUpload(true);
     const formData = new FormData();
     formData.append('file', file);
     try {
@@ -719,6 +762,8 @@ export default function AdminDashboard({
     } catch (err) {
       console.error(err);
       await showAlert('Lỗi kết nối API upload ảnh');
+    } finally {
+      setLoadingImageUpload(false);
     }
   };
 
@@ -806,6 +851,7 @@ export default function AdminDashboard({
       creatorId: eventCreatorId || null
     };
 
+    setLoadingSaveEvent(true);
     try {
       let res;
       if (editingEventId === 'new') {
@@ -833,12 +879,15 @@ export default function AdminDashboard({
     } catch (err) {
       console.error(err);
       await showAlert('Lỗi kết nối API lưu sự kiện');
+    } finally {
+      setLoadingSaveEvent(false);
     }
   };
 
   const handleDeleteEvent = async (id) => {
     const isConfirmed = await showConfirm("Bạn có chắc chắn muốn xóa sự kiện này? Thao tác này sẽ xóa tất cả các phân khu và đơn đặt vé liên quan.");
     if (isConfirmed) {
+      setLoadingEventAction(id);
       try {
         const res = await fetch(`http://localhost:5000/api/admin/events/${id}`, {
           method: 'DELETE'
@@ -852,6 +901,8 @@ export default function AdminDashboard({
       } catch (err) {
         console.error(err);
         await showAlert('Lỗi kết nối API xóa sự kiện');
+      } finally {
+        setLoadingEventAction(null);
       }
     }
   };
@@ -860,6 +911,7 @@ export default function AdminDashboard({
     const status = approve ? 'approved' : 'rejected';
     const isConfirmed = await showConfirm(`Bạn có chắc chắn muốn ${approve ? 'duyệt' : 'từ chối'} sự kiện này?`);
     if (isConfirmed) {
+      setLoadingEventAction(id);
       try {
         const res = await fetch(`http://localhost:5000/api/admin/events/${id}`, {
           method: 'PUT',
@@ -876,6 +928,8 @@ export default function AdminDashboard({
       } catch (err) {
         console.error(err);
         await showAlert('Lỗi kết nối API phê duyệt sự kiện');
+      } finally {
+        setLoadingEventAction(null);
       }
     }
   };
@@ -4162,6 +4216,7 @@ export default function AdminDashboard({
                               <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
                                 <button
                                   onClick={() => handleApproveEvent(event.id, true)}
+                                  disabled={loadingEventAction === event.id}
                                   className="btn-primary"
                                   style={{
                                     background: '#10b981',
@@ -4169,18 +4224,28 @@ export default function AdminDashboard({
                                     color: '#fff',
                                     padding: '6px 12px',
                                     borderRadius: '6px',
-                                    cursor: 'pointer',
+                                    cursor: loadingEventAction === event.id ? 'not-allowed' : 'pointer',
                                     fontSize: '12px',
                                     fontWeight: 'bold',
                                     display: 'flex',
                                     alignItems: 'center',
-                                    gap: '4px'
+                                    gap: '4px',
+                                    opacity: loadingEventAction === event.id ? 0.7 : 1
                                   }}
                                 >
-                                  <Check size={12} /> Duyệt
+                                  {loadingEventAction === event.id ? (
+                                    <>
+                                      <RefreshCw size={12} spin /> Đang duyệt...
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Check size={12} /> Duyệt
+                                    </>
+                                  )}
                                 </button>
                                 <button
                                   onClick={() => handleApproveEvent(event.id, false)}
+                                  disabled={loadingEventAction === event.id}
                                   className="btn-secondary"
                                   style={{
                                     background: '#ef4444',
@@ -4188,15 +4253,24 @@ export default function AdminDashboard({
                                     color: '#fff',
                                     padding: '6px 12px',
                                     borderRadius: '6px',
-                                    cursor: 'pointer',
+                                    cursor: loadingEventAction === event.id ? 'not-allowed' : 'pointer',
                                     fontSize: '12px',
                                     fontWeight: 'bold',
                                     display: 'flex',
                                     alignItems: 'center',
-                                    gap: '4px'
+                                    gap: '4px',
+                                    opacity: loadingEventAction === event.id ? 0.7 : 1
                                   }}
                                 >
-                                  <X size={12} /> Từ chối
+                                  {loadingEventAction === event.id ? (
+                                    <>
+                                      <RefreshCw size={12} spin /> Đang từ chối...
+                                    </>
+                                  ) : (
+                                    <>
+                                      <X size={12} /> Từ chối
+                                    </>
+                                  )}
                                 </button>
                               </div>
                             </td>
