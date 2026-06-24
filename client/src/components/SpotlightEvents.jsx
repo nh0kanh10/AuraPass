@@ -349,7 +349,13 @@ export default function SpotlightEvents({ events, onBookClick }) {
                       setActiveId(uniqueKey);
                     }
                   }}
-                  onClick={() => setActiveId(uniqueKey)}
+                  onClick={() => {
+                    if (isActive) {
+                      onBookClick(event);
+                    } else {
+                      setActiveId(uniqueKey);
+                    }
+                  }}
                   style={style}
                 >
                   {isActive && (

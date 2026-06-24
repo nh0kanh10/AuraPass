@@ -320,7 +320,13 @@ export default function TrendingEvents({ events, onBookClick }) {
                 {/* Card — z-index 2: nằm trên rank number */}
                 <div
                   className="trending-card"
-                  onClick={() => setActiveId(uniqueKey)}
+                  onClick={() => {
+                    if (isActive) {
+                      onBookClick(event);
+                    } else {
+                      setActiveId(uniqueKey);
+                    }
+                  }}
                   style={{
                     width: '260px',
                     height: '160px',

@@ -129,7 +129,7 @@ export default function Footer({ onNavigate }) {
                   e.currentTarget.style.boxShadow = subscribed ? 'none' : '0 4px 10px rgba(124, 58, 237, 0.15)';
                 }}
               >
-                {subscribed ? '✓ Đã đăng ký' : <><span>Đăng ký</span><ArrowRight size={13} /></>}
+                {subscribed ? '✓ Đã đăng ký' : <><span style={{ color: '#ffffff' }}>Đăng ký</span><ArrowRight size={13} /></>}
               </button>
             </div>
           </div>

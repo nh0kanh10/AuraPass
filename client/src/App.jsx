@@ -229,6 +229,15 @@ function App() {
   };
 
   const scrollToSection = useCallback((sectionId) => {
+    if (sectionId === 'artists') {
+      setCurrentView('creators');
+      setSearchTerm('');
+      setSelectedCategory('all');
+      setActiveSection('artists');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
     setCurrentView('home');
     setSearchTerm('');
     setSelectedCategory('all');

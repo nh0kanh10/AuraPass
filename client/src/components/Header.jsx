@@ -45,6 +45,7 @@ export default function Header({
   const [resalePriceInput, setResalePriceInput] = useState('');
   const [isResaleSubmitting, setIsResaleSubmitting] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
 
   useEffect(() => {
     if (openLoginTrigger > 0) {
@@ -79,7 +80,7 @@ export default function Header({
   const [evtDescription, setEvtDescription] = useState('');
   const [evtCategory, setEvtCategory] = useState('concert');
   const [evtDate, setEvtDate] = useState('');
-  const [evtTime, setEvtTime] = useState('');
+  const [evtTime, setEvtTime] = useState('19:30');
   const [evtLocation, setEvtLocation] = useState('');
   const [evtPriceRange, setEvtPriceRange] = useState('');
   const [evtImage, setEvtImage] = useState('');
@@ -96,7 +97,7 @@ export default function Header({
   const [loadingMyEvents, setLoadingMyEvents] = useState(false);
 
   const fetchMyEvents = async () => {
-    if (!currentUser) return;
+    if (!currentUser || !currentUser.id) return;
     setLoadingMyEvents(true);
     try {
       const res = await fetch(`http://localhost:5000/api/events?organizerId=${currentUser.id}`);
@@ -142,8 +143,16 @@ export default function Header({
 
   const handleCreateEventSubmit = async (e) => {
     e.preventDefault();
-    if (!evtTitle || !evtDate || !evtTime || !evtLocation || !evtPriceRange || !evtImage) {
-      await showAlert('Vui lòng điền đầy đủ các thông tin bắt buộc.');
+    const missing = [];
+    if (!evtTitle) missing.push('Tên sự kiện');
+    if (!evtDate) missing.push('Ngày diễn ra');
+    if (!evtTime) missing.push('Giờ diễn ra');
+    if (!evtLocation) missing.push('Địa điểm');
+    if (!evtPriceRange) missing.push('Khoảng giá hiển thị');
+    if (!evtImage) missing.push('Ảnh sự kiện');
+
+    if (missing.length > 0) {
+      await showAlert(`Vui lòng điền đầy đủ các thông tin bắt buộc:\n- ${missing.join('\n- ')}`);
       return;
     }
     setIsEvtSubmitting(true);
@@ -177,11 +186,12 @@ export default function Header({
 
       await showAlert('Tạo sự kiện thành công! Sự kiện đang được chờ ban quản trị phê duyệt.');
       setModalType(null);
+      setShowTimePicker(false);
       setEvtTitle('');
       setEvtDescription('');
       setEvtCategory('concert');
       setEvtDate('');
-      setEvtTime('');
+      setEvtTime('19:30');
       setEvtLocation('');
       setEvtPriceRange('');
       setEvtImage('');
@@ -1791,16 +1801,115 @@ export default function Header({
                       className="edm-input-field-new"
                     />
                   </div>
-                  <div className="edm-input-group" style={{ flex: 1 }}>
+                  <div className="edm-input-group" style={{ flex: 1, position: 'relative' }}>
                     <label className="edm-input-label">Giờ diễn ra *</label>
-                    <input
-                      type="text"
-                      required
-                      value={evtTime}
-                      onChange={(e) => setEvtTime(e.target.value)}
-                      placeholder="Ví dụ: 19:30"
+                    <div
+                      onClick={() => setShowTimePicker(!showTimePicker)}
                       className="edm-input-field-new"
-                    />
+                      style={{
+                        height: '38px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        cursor: 'pointer',
+                        padding: '0 13px',
+                        userSelect: 'none',
+                        fontFamily: 'var(--font-mono)',
+                        fontSize: '13.5px',
+                        borderColor: showTimePicker ? 'rgba(167, 139, 250, 0.5)' : ''
+                      }}
+                    >
+                      <span>{evtTime || '19:30'}</span>
+                      <span style={{ fontSize: '10px', opacity: 0.5 }}>▼</span>
+                    </div>
+
+                    {showTimePicker && (
+                      <>
+                        <div 
+                          onClick={() => setShowTimePicker(false)}
+                          style={{ position: 'fixed', inset: 0, zIndex: 100 }}
+                        />
+                        <div
+                          className="custom-time-picker-panel"
+                          style={{
+                            position: 'absolute',
+                            top: '64px',
+                            left: 0,
+                            width: '180px',
+                            height: '180px',
+                            background: 'linear-gradient(160deg, rgba(38, 30, 64, 0.98) 0%, rgba(22, 16, 42, 0.99) 100%)',
+                            border: '1px solid rgba(255, 255, 255, 0.16)',
+                            borderRadius: '12px',
+                            boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
+                            display: 'flex',
+                            zIndex: 101,
+                            overflow: 'hidden',
+                            padding: '8px',
+                            boxSizing: 'border-box'
+                          }}
+                        >
+                          <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '2px', paddingRight: '4px', borderRight: '1px solid rgba(255,255,255,0.08)' }} className="time-picker-column">
+                            <div style={{ fontSize: '9px', fontFamily: 'var(--font-mono)', textAlign: 'center', color: '#fbbf24', paddingBottom: '4px', borderBottom: '1px dashed rgba(255,255,255,0.1)', marginBottom: '4px', position: 'sticky', top: 0, background: 'rgba(38, 30, 64, 0.98)' }}>GIỜ</div>
+                            {Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0')).map(h => {
+                              const [currentH, currentM] = (evtTime || '19:30').split(':');
+                              const isSelected = currentH === h;
+                              return (
+                                <button
+                                  key={h}
+                                  type="button"
+                                  onClick={() => setEvtTime(`${h}:${currentM || '30'}`)}
+                                  style={{
+                                    background: isSelected ? 'rgba(139, 92, 246, 0.35)' : 'transparent',
+                                    border: isSelected ? '1px solid rgba(139, 92, 246, 0.6)' : 'none',
+                                    borderRadius: '6px',
+                                    padding: '6px 0',
+                                    color: isSelected ? '#fff' : 'rgba(255,255,255,0.65)',
+                                    fontFamily: 'var(--font-mono)',
+                                    fontSize: '12.5px',
+                                    fontWeight: isSelected ? 700 : 400,
+                                    cursor: 'pointer',
+                                    transition: 'all 0.15s ease'
+                                  }}
+                                  className="time-picker-item"
+                                >
+                                  {h}
+                                </button>
+                              );
+                            })}
+                          </div>
+
+                          <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '2px', paddingLeft: '4px' }} className="time-picker-column">
+                            <div style={{ fontSize: '9px', fontFamily: 'var(--font-mono)', textAlign: 'center', color: '#fbbf24', paddingBottom: '4px', borderBottom: '1px dashed rgba(255,255,255,0.1)', marginBottom: '4px', position: 'sticky', top: 0, background: 'rgba(38, 30, 64, 0.98)' }}>PHÚT</div>
+                            {Array.from({ length: 12 }, (_, i) => String(i * 5).padStart(2, '0')).map(m => {
+                              const [currentH, currentM] = (evtTime || '19:30').split(':');
+                              const isSelected = currentM === m;
+                              return (
+                                <button
+                                  key={m}
+                                  type="button"
+                                  onClick={() => setEvtTime(`${currentH || '19'}:${m}`)}
+                                  style={{
+                                    background: isSelected ? 'rgba(139, 92, 246, 0.35)' : 'transparent',
+                                    border: isSelected ? '1px solid rgba(139, 92, 246, 0.6)' : 'none',
+                                    borderRadius: '6px',
+                                    padding: '6px 0',
+                                    color: isSelected ? '#fff' : 'rgba(255,255,255,0.65)',
+                                    fontFamily: 'var(--font-mono)',
+                                    fontSize: '12.5px',
+                                    fontWeight: isSelected ? 700 : 400,
+                                    cursor: 'pointer',
+                                    transition: 'all 0.15s ease'
+                                  }}
+                                  className="time-picker-item"
+                                >
+                                  {m}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
 
@@ -1843,12 +1952,45 @@ export default function Header({
                 <div className="edm-input-group">
                   <label className="edm-input-label">Ảnh sự kiện *</label>
                   {evtImage ? (
-                    <div className="evt-img-preview" onClick={() => imgInputRef.current?.click()}>
-                      <img src={evtImage} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '10px', display: 'block' }} />
-                      <div className="evt-img-overlay">
-                        <ImagePlus size={16} />
-                        <span>Đổi ảnh</span>
+                    <div style={{ position: 'relative', width: '100%' }}>
+                      <div className="evt-img-preview" onClick={() => imgInputRef.current?.click()}>
+                        <img src={evtImage} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '10px', display: 'block' }} />
+                        <div className="evt-img-overlay">
+                          <ImagePlus size={16} />
+                          <span>Đổi ảnh</span>
+                        </div>
                       </div>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEvtImage('');
+                          if (imgInputRef.current) imgInputRef.current.value = '';
+                        }}
+                        style={{
+                          position: 'absolute',
+                          top: '8px',
+                          right: '8px',
+                          background: 'rgba(239, 68, 68, 0.85)',
+                          border: 'none',
+                          borderRadius: '50%',
+                          width: '26px',
+                          height: '26px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: '#ffffff',
+                          cursor: 'pointer',
+                          zIndex: 10,
+                          boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+                          transition: 'all 0.2s ease',
+                        }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = '#ef4444'; e.currentTarget.style.transform = 'scale(1.1)'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(239, 68, 68, 0.85)'; e.currentTarget.style.transform = 'scale(1)'; }}
+                        title="Xóa ảnh"
+                      >
+                        <X size={14} strokeWidth={2.5} />
+                      </button>
                     </div>
                   ) : (
                     <button

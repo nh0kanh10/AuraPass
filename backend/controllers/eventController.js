@@ -5,6 +5,9 @@ export const getEvents = async (req, res) => {
     const { organizerId, status } = req.query;
     const where = {};
     if (organizerId) {
+      if (organizerId === 'undefined' || organizerId === 'null' || organizerId === '') {
+        return res.json([]);
+      }
       where.organizerId = organizerId;
     } else if (status) {
       where.status = status;
