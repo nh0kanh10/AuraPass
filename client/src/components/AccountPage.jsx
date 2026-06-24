@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import {
   ArrowLeft, User, Lock, Ticket, BarChart2, Plus, X, Edit2,
   ImagePlus, Loader, Trash2, DollarSign, Calendar, CheckCircle,
-  Clock, ChevronDown, QrCode
+  Clock, ChevronDown, QrCode, Video, ExternalLink, KeyRound
 } from 'lucide-react';
 
 const fmt = (n) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n || 0);
@@ -161,6 +161,10 @@ export default function AccountPage({
   const [evtBadge, setEvtBadge] = useState('');
   const [evtTheme, setEvtTheme] = useState('cyberpunk');
   const [evtZones, setEvtZones] = useState(DEFAULT_ZONES);
+  const [evtEventType, setEvtEventType] = useState('live');
+  const [evtOnlineLink, setEvtOnlineLink] = useState('');
+  const [evtPlatform, setEvtPlatform] = useState('');
+  const [evtOnlinePwd, setEvtOnlinePwd] = useState('');
   const [submittingEvt, setSubmittingEvt] = useState(false);
   const [uploadingImg, setUploadingImg] = useState(false);
   const imgRef = useRef(null);
@@ -209,6 +213,7 @@ export default function AccountPage({
     setEvtDate(''); setEvtTime('19:30'); setEvtLocation('');
     setEvtPriceRange(''); setEvtImage(''); setEvtBadge('');
     setEvtTheme('cyberpunk'); setEvtZones(DEFAULT_ZONES);
+    setEvtEventType('live'); setEvtOnlineLink(''); setEvtPlatform(''); setEvtOnlinePwd('');
     setShowEvtForm(true);
   };
 
@@ -225,6 +230,10 @@ export default function AccountPage({
     setEvtBadge(event.badge || '');
     setEvtTheme(event.theme || 'cyberpunk');
     setEvtZones(event.zones?.length ? normalizeZones(event.zones) : DEFAULT_ZONES);
+    setEvtEventType(event.eventType || 'live');
+    setEvtOnlineLink(event.onlineLink || '');
+    setEvtPlatform(event.platform || '');
+    setEvtOnlinePwd(event.onlinePassword || '');
     setShowEvtForm(true);
   };
 
@@ -250,7 +259,11 @@ export default function AccountPage({
             date: evtDate, time: evtTime, location: evtLocation, priceRange: evtPriceRange,
             image: evtImage, badge: evtBadge, theme: evtTheme,
             zones: normalizeZones(evtZones), organizerId: currentUser.id,
-            status: isEdit ? editingEvt.status : 'pending'
+            status: isEdit ? editingEvt.status : 'pending',
+            eventType: evtEventType,
+            onlineLink: evtEventType === 'online' ? evtOnlineLink : null,
+            platform: evtEventType === 'online' ? evtPlatform : null,
+            onlinePassword: evtEventType === 'online' ? evtOnlinePwd : null
           })
         }
       );
@@ -481,6 +494,47 @@ export default function AccountPage({
                             </div>
                           ))}
                         </div>
+
+                        {/* Online link — only visible when active + online event */}
+                        {ticket.eventType === 'online' && ticket.onlineLink && (
+                          <div style={{
+                            padding: '12px 14px', borderRadius: '8px',
+                            border: '1px solid rgba(0,255,255,0.25)',
+                            background: 'rgba(0,255,255,0.06)', marginBottom: '12px'
+                          }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
+                              <Video size={13} color="var(--brand-cyan)" />
+                              <span style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: 'var(--brand-cyan)', letterSpacing: '0.07em' }}>
+                                LINK THAM GIA {ticket.platform ? `· ${ticket.platform.toUpperCase()}` : ''}
+                              </span>
+                            </div>
+                            <a
+                              href={ticket.onlineLink}
+                              target="_blank"
+                              rel="noreferrer"
+                              style={{
+                                display: 'flex', alignItems: 'center', gap: '6px',
+                                padding: '8px 12px', borderRadius: '6px',
+                                background: 'var(--brand-cyan)', color: '#000',
+                                fontSize: '12px', fontWeight: 700, fontFamily: 'var(--font-mono)',
+                                textDecoration: 'none', letterSpacing: '0.05em',
+                                marginBottom: ticket.onlinePassword ? '8px' : 0,
+                                transition: 'opacity 0.2s'
+                              }}
+                            >
+                              <ExternalLink size={12} /> VÀO PHÒNG NGAY
+                            </a>
+                            {ticket.onlinePassword && (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '8px' }}>
+                                <KeyRound size={11} style={{ color: 'var(--text-muted)' }} />
+                                <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Mật khẩu:</span>
+                                <code style={{ fontSize: '12px', color: 'var(--text-primary)', fontFamily: 'var(--font-mono)', background: 'rgba(255,255,255,0.06)', padding: '1px 6px', borderRadius: '4px' }}>
+                                  {ticket.onlinePassword}
+                                </code>
+                              </div>
+                            )}
+                          </div>
+                        )}
 
                         {/* Action buttons */}
                         {!isReselling ? (
@@ -801,6 +855,59 @@ export default function AccountPage({
                 <label style={labelSt}>Khoảng giá hiển thị *</label>
                 <input style={inputSt} value={evtPriceRange} onChange={e => setEvtPriceRange(e.target.value)} placeholder="VD: 500.000đ - 1.500.000đ" />
               </div>
+
+              {/* Event type */}
+              <div>
+                <label style={labelSt}>Loại sự kiện</label>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  {[
+                    { val: 'live', label: '🎤 Trực tiếp' },
+                    { val: 'online', label: '💻 Trực tuyến' }
+                  ].map(opt => (
+                    <button
+                      key={opt.val}
+                      type="button"
+                      onClick={() => setEvtEventType(opt.val)}
+                      style={{
+                        flex: 1, padding: '9px', borderRadius: '8px', cursor: 'pointer',
+                        fontSize: '13px', fontFamily: 'var(--font-body)', fontWeight: evtEventType === opt.val ? 600 : 400,
+                        border: `1px solid ${evtEventType === opt.val ? 'var(--brand-cyan)' : 'rgba(255,255,255,0.1)'}`,
+                        background: evtEventType === opt.val ? 'rgba(0,255,255,0.08)' : 'rgba(255,255,255,0.02)',
+                        color: evtEventType === opt.val ? 'var(--brand-cyan)' : 'var(--text-muted)',
+                        transition: 'all 0.2s'
+                      }}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Online fields */}
+              {evtEventType === 'online' && (
+                <div style={{ padding: '16px', borderRadius: '8px', border: '1px solid rgba(0,255,255,0.2)', background: 'rgba(0,255,255,0.04)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <div style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: 'var(--brand-cyan)', letterSpacing: '0.08em', marginBottom: '2px' }}>
+                    THÔNG TIN PHÒNG TRỰC TUYẾN
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                    <div>
+                      <label style={labelSt}>Nền tảng</label>
+                      <input style={inputSt} value={evtPlatform} onChange={e => setEvtPlatform(e.target.value)} placeholder="Zoom, Google Meet..." />
+                    </div>
+                    <div>
+                      <label style={labelSt}>Mật khẩu phòng (nếu có)</label>
+                      <input style={inputSt} value={evtOnlinePwd} onChange={e => setEvtOnlinePwd(e.target.value)} placeholder="Tuỳ chọn" />
+                    </div>
+                  </div>
+                  <div>
+                    <label style={labelSt}>Link tham gia *</label>
+                    <input style={inputSt} value={evtOnlineLink} onChange={e => setEvtOnlineLink(e.target.value)} placeholder="https://zoom.us/j/..." />
+                    <p style={{ fontSize: '11px', color: 'var(--text-muted)', margin: '5px 0 0', fontStyle: 'italic' }}>
+                      Link sẽ bị ẩn với công khai — chỉ hiện sau khi khán giả thanh toán thành công.
+                    </p>
+                  </div>
+                </div>
+              )}
 
               {/* Zones */}
               <div>

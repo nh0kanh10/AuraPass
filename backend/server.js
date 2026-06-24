@@ -25,6 +25,7 @@ app.listen(PORT, async () => {
   try {
     await sequelize.authenticate();
     console.log('Database connected successfully.');
+
     setInterval(async () => {
       try {
         const { cancelled } = await cancelExpiredBookings(30);

@@ -92,7 +92,11 @@ export const getWalletTickets = async (req, res) => {
         eventTitle: ticketData.event ? ticketData.event.title : '',
         image: ticketData.event ? ticketData.event.image : '',
         zoneName: ticketData.zone ? ticketData.zone.name : '',
-        price: ticketData.zone ? ticketData.zone.price : 0
+        price: ticketData.zone ? ticketData.zone.price : 0,
+        eventType: ticketData.event?.eventType || 'live',
+        platform: ticketData.event?.platform || null,
+        onlineLink: (ticketData.status === 'active' && ticketData.event?.eventType === 'online') ? (ticketData.event.onlineLink || null) : null,
+        onlinePassword: (ticketData.status === 'active' && ticketData.event?.eventType === 'online') ? (ticketData.event.onlinePassword || null) : null
       };
     });
     res.json(formattedTickets);

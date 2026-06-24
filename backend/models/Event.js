@@ -56,6 +56,19 @@ const Event = sequelize.define('Event', {
   },
   organizerId: {
     type: DataTypes.STRING(50)
+  },
+  eventType: {
+    type: DataTypes.STRING(50),
+    defaultValue: 'live'
+  },
+  onlineLink: {
+    type: DataTypes.STRING(1000)
+  },
+  platform: {
+    type: DataTypes.STRING(100)
+  },
+  onlinePassword: {
+    type: DataTypes.STRING(255)
   }
 }, {
   tableName: 'Events',

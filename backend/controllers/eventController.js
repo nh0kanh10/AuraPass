@@ -60,7 +60,7 @@ const normalizeEventZones = (zones = []) => zones.map((zone) => {
 });
 
 export const createEvent = async (req, res) => {
-  const { title, description, category, date, time, location, priceRange, image, badge, theme, isFeatured, isTrending, zones, creatorId, organizerId, status } = req.body;
+  const { title, description, category, date, time, location, priceRange, image, badge, theme, isFeatured, isTrending, zones, creatorId, organizerId, status, eventType, onlineLink, platform, onlinePassword } = req.body;
   const t = await sequelize.transaction();
   try {
     const eventId = `event-${Date.now()}`;
@@ -80,7 +80,11 @@ export const createEvent = async (req, res) => {
       isTrending: isTrending ?? false,
       creatorId: creatorId || null,
       organizerId: organizerId || null,
-      status: status || 'pending'
+      status: status || 'pending',
+      eventType: eventType || 'live',
+      onlineLink: onlineLink || null,
+      platform: platform || null,
+      onlinePassword: onlinePassword || null
     }, { transaction: t });
 
     const normalizedZones = normalizeEventZones(zones);
@@ -108,7 +112,7 @@ export const createEvent = async (req, res) => {
 };
 
 export const updateEvent = async (req, res) => {
-  const { title, description, category, date, time, location, priceRange, image, badge, theme, isFeatured, isTrending, zones, creatorId, organizerId, status } = req.body;
+  const { title, description, category, date, time, location, priceRange, image, badge, theme, isFeatured, isTrending, zones, creatorId, organizerId, status, eventType, onlineLink, platform, onlinePassword } = req.body;
   const t = await sequelize.transaction();
   try {
     const event = await Event.findByPk(req.params.id, { transaction: t });
@@ -129,7 +133,11 @@ export const updateEvent = async (req, res) => {
       isTrending: isTrending !== undefined ? isTrending : event.isTrending,
       creatorId: creatorId ? creatorId : event.creatorId,
       organizerId: organizerId ? organizerId : event.organizerId,
-      status: status !== undefined ? status : event.status
+      status: status !== undefined ? status : event.status,
+      eventType: eventType !== undefined ? eventType : event.eventType,
+      onlineLink: onlineLink !== undefined ? (onlineLink || null) : event.onlineLink,
+      platform: platform !== undefined ? (platform || null) : event.platform,
+      onlinePassword: onlinePassword !== undefined ? (onlinePassword || null) : event.onlinePassword
     }, { transaction: t });
 
     if (zones) {

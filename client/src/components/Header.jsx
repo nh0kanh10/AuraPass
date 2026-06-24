@@ -95,6 +95,10 @@ export default function Header({
   const [evtBadge, setEvtBadge] = useState('');
   const [evtTheme, setEvtTheme] = useState('cyberpunk');
   const [evtZones, setEvtZones] = useState(DEFAULT_ORGANIZER_ZONES);
+  const [evtEventType, setEvtEventType] = useState('live');
+  const [evtOnlineLink, setEvtOnlineLink] = useState('');
+  const [evtPlatform, setEvtPlatform] = useState('');
+  const [evtOnlinePwd, setEvtOnlinePwd] = useState('');
   const [isEvtSubmitting, setIsEvtSubmitting] = useState(false);
   const [isImgUploading, setIsImgUploading] = useState(false);
   const imgInputRef = useRef(null);
@@ -143,6 +147,10 @@ export default function Header({
     setEvtBadge(event.badge || '');
     setEvtTheme(event.theme || 'cyberpunk');
     setEvtZones(event.zones && event.zones.length > 0 ? normalizeOrganizerZones(event.zones) : DEFAULT_ORGANIZER_ZONES);
+    setEvtEventType(event.eventType || 'live');
+    setEvtOnlineLink(event.onlineLink || '');
+    setEvtPlatform(event.platform || '');
+    setEvtOnlinePwd(event.onlinePassword || '');
     setModalType('edit-event');
   };
 
@@ -245,7 +253,11 @@ export default function Header({
           zones: normalizeOrganizerZones(evtZones),
           organizerId: currentUser ? currentUser.id : null,
           creatorId: myCreator ? myCreator.id : (isEdit ? editingEvent.creatorId : null),
-          status: isEdit ? editingEvent.status : 'pending'
+          status: isEdit ? editingEvent.status : 'pending',
+          eventType: evtEventType,
+          onlineLink: evtEventType === 'online' ? evtOnlineLink : null,
+          platform: evtEventType === 'online' ? evtPlatform : null,
+          onlinePassword: evtEventType === 'online' ? evtOnlinePwd : null
         })
       });
 
@@ -274,6 +286,10 @@ export default function Header({
       setEvtBadge('');
       setEvtTheme('cyberpunk');
       setEvtZones(DEFAULT_ORGANIZER_ZONES);
+      setEvtEventType('live');
+      setEvtOnlineLink('');
+      setEvtPlatform('');
+      setEvtOnlinePwd('');
       fetchMyEvents();
     } catch (err) {
       console.error(err);
@@ -2235,6 +2251,46 @@ export default function Header({
                     />
                   </div>
                 </div>
+
+                {/* Event type */}
+                <div className="edm-input-group">
+                  <label className="edm-input-label">Loại sự kiện</label>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    {[{ val: 'live', label: '🎤 Trực tiếp' }, { val: 'online', label: '💻 Trực tuyến' }].map(opt => (
+                      <button key={opt.val} type="button" onClick={() => setEvtEventType(opt.val)} style={{
+                        flex: 1, padding: '9px', borderRadius: '8px', cursor: 'pointer', fontSize: '13px',
+                        fontFamily: 'var(--font-body)', fontWeight: evtEventType === opt.val ? 600 : 400,
+                        border: `1px solid ${evtEventType === opt.val ? 'var(--brand-cyan)' : 'rgba(255,255,255,0.1)'}`,
+                        background: evtEventType === opt.val ? 'rgba(0,255,255,0.08)' : 'rgba(255,255,255,0.02)',
+                        color: evtEventType === opt.val ? 'var(--brand-cyan)' : 'var(--text-muted)', transition: 'all 0.2s'
+                      }}>
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Online fields */}
+                {evtEventType === 'online' && (
+                  <div style={{ padding: '14px', borderRadius: '8px', border: '1px solid rgba(0,255,255,0.2)', background: 'rgba(0,255,255,0.04)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    <div style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: 'var(--brand-cyan)', letterSpacing: '0.08em' }}>THÔNG TIN PHÒNG TRỰC TUYẾN</div>
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                      <div style={{ flex: 1 }}>
+                        <label className="edm-input-label">Nền tảng</label>
+                        <input className="edm-input-field-new" value={evtPlatform} onChange={e => setEvtPlatform(e.target.value)} placeholder="Zoom, Google Meet..." />
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <label className="edm-input-label">Mật khẩu (nếu có)</label>
+                        <input className="edm-input-field-new" value={evtOnlinePwd} onChange={e => setEvtOnlinePwd(e.target.value)} placeholder="Tuỳ chọn" />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="edm-input-label">Link tham gia *</label>
+                      <input className="edm-input-field-new" value={evtOnlineLink} onChange={e => setEvtOnlineLink(e.target.value)} placeholder="https://zoom.us/j/..." />
+                      <p style={{ fontSize: '11px', color: 'var(--text-muted)', margin: '5px 0 0', fontStyle: 'italic' }}>Link bị ẩn công khai — chỉ hiện sau khi khán giả thanh toán.</p>
+                    </div>
+                  </div>
+                )}
 
                 <div className="edm-input-group">
                   <label className="edm-input-label">Ảnh sự kiện *</label>
