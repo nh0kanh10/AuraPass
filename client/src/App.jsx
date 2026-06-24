@@ -366,7 +366,8 @@ function App() {
               totalPrice,
               fullName,
               email,
-              phone
+              phone,
+              paymentStatus: 'Paid'
             })
           });
           if (!res.ok) {

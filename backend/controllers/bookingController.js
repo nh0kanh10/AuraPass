@@ -2,8 +2,8 @@ import { Op } from 'sequelize';
 import { Booking, Ticket, Zone, Event, sequelize } from '../models/index.js';
 
 export const createBooking = async (req, res) => {
-  const { 
-    userId, eventId, zoneId, count, seats, totalPrice, fullName, email, phone 
+  const {
+    userId, eventId, zoneId, count, seats, totalPrice, fullName, email, phone, paymentStatus: reqPaymentStatus
   } = req.body;
 
   const t = await sequelize.transaction();
@@ -32,7 +32,7 @@ export const createBooking = async (req, res) => {
       email,
       phone,
       ticketId: repTicketId,
-      paymentStatus: 'Pending',
+      paymentStatus: reqPaymentStatus === 'Paid' ? 'Paid' : 'Pending',
       bookingType: 'primary'
     }, { transaction: t });
 
@@ -47,7 +47,7 @@ export const createBooking = async (req, res) => {
         zoneId,
         seatNumber: seat,
         qrCode: `QR-AP-${Math.floor(100000 + Math.random() * 900000)}-${i}`,
-        status: 'inactive',
+        status: reqPaymentStatus === 'Paid' ? 'active' : 'inactive',
         purchaseType: 'primary'
       }, { transaction: t });
       newTickets.push(ticket);
