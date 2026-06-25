@@ -4,7 +4,7 @@ import {
   ArrowLeft, User, Lock, Ticket, BarChart2, Plus, X, Edit2,
   ImagePlus, Loader, Trash2, DollarSign, Calendar, CheckCircle,
   Clock, ChevronDown, QrCode, Video, ExternalLink, KeyRound,
-  Mic, Monitor, Users
+  Mic, Monitor, Users, LayoutDashboard, Filter, CheckSquare, TimerOff, CircleDot
 } from 'lucide-react';
 
 const fmt = (n) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n || 0);
@@ -109,6 +109,31 @@ export default function AccountPage({
   const [resalePending, setResalePending] = useState(null);
   const [resalePrice, setResalePrice] = useState('');
   const [submittingResale, setSubmittingResale] = useState(false);
+  const [ticketFilter, setTicketFilter] = useState('all'); // 'all' | 'active' | 'expired' | 'used'
+
+  const now = new Date();
+  // Helpers để xác định trạng thái vé dựa trên eventDate từ backend
+  const getTicketStatus = (ticket) => {
+    const isUsed = ticket.status === 'used' || ticket.used === true; // nếu backend sau này thêm
+    // eventDate là string 'YYYY-MM-DD' từ event.date
+    const eventDate = ticket.eventDate ? new Date(ticket.eventDate) : null;
+    // Coi vé hết hạn nếu ngày sự kiện < hôm nay (đã qua)
+    const isExpired = eventDate ? eventDate < now : false;
+    const isReselling = ticket.status === 'reselling';
+    return { isUsed, isExpired, isReselling };
+  };
+
+  const getFilteredTickets = () => {
+    if (ticketFilter === 'all') return userTickets;
+    return userTickets.filter(ticket => {
+      const { isUsed, isExpired, isReselling } = getTicketStatus(ticket);
+      if (ticketFilter === 'active') return !isExpired && !isUsed;   // còn hạn
+      if (ticketFilter === 'expired') return isExpired && !isUsed;   // event đã qua, chưa bị used
+      if (ticketFilter === 'used') return isUsed;                    // có status used (hiện chưa có trong DB)
+      return true;
+    });
+  };
+  const filteredTickets = getFilteredTickets();
 
   const handleResaleSubmit = async () => {
     const priceNum = parseInt(resalePrice.replace(/[^0-9]/g, ''), 10);
@@ -319,7 +344,7 @@ export default function AccountPage({
     { id: 'profile', label: 'Thông tin' },
     { id: 'password', label: 'Đổi mật khẩu' },
     { id: 'tickets', label: `Vé của tôi${userTickets.length ? ` (${userTickets.length})` : ''}` },
-    ...(isOrganizer ? [{ id: 'dashboard', label: '⚡ Dashboard BTC' }] : [])
+    ...(isOrganizer ? [{ id: 'dashboard', label: 'Dashboard BTC', isDashboard: true }] : [])
   ];
 
   return (
@@ -375,8 +400,19 @@ export default function AccountPage({
               cursor: 'pointer', color: active ? 'var(--text-primary)' : 'var(--text-muted)',
               fontWeight: active ? 700 : 400,
               borderBottom: active ? '2px solid var(--brand-cyan)' : '2px solid transparent',
-              marginBottom: '-1px', transition: 'all 0.2s', whiteSpace: 'nowrap'
+              marginBottom: '-1px', transition: 'all 0.2s', whiteSpace: 'nowrap',
+              display: 'flex', alignItems: 'center', gap: '6px'
             }}>
+              {tab.isDashboard && (
+                <LayoutDashboard
+                  size={13}
+                  style={{
+                    color: active ? 'var(--brand-cyan)' : 'var(--text-muted)',
+                    filter: active ? 'drop-shadow(0 0 4px var(--brand-cyan))' : 'none',
+                    transition: 'all 0.2s'
+                  }}
+                />
+              )}
               {tab.label}
             </button>
           );
@@ -442,30 +478,91 @@ export default function AccountPage({
       {/* ── TAB: TICKETS ── */}
       {activeTab === 'tickets' && (
         <div>
+          {/* Filter bar */}
+          {userTickets.length > 0 && (
+            <div style={{
+              display: 'flex', gap: '8px', marginBottom: '20px', flexWrap: 'wrap', alignItems: 'center'
+            }}>
+              <Filter size={13} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+              {[
+                { id: 'all', label: 'Tất cả', count: userTickets.length, icon: null },
+                { id: 'active', label: 'Còn hạn', icon: CheckSquare },
+                { id: 'expired', label: 'Hết hạn', icon: TimerOff },
+                { id: 'used', label: 'Đã sử dụng', icon: CircleDot },
+              ].map(f => {
+                const active = ticketFilter === f.id;
+                const FIcon = f.icon;
+                return (
+                  <button
+                    key={f.id}
+                    onClick={() => setTicketFilter(f.id)}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: '5px',
+                      padding: '5px 12px', borderRadius: '20px', cursor: 'pointer',
+                      fontSize: '11px', fontFamily: 'var(--font-mono)', letterSpacing: '0.04em',
+                      fontWeight: active ? 700 : 400,
+                      border: `1px solid ${active ? 'var(--brand-cyan)' : 'rgba(255,255,255,0.12)'}`,
+                      background: active ? 'rgba(0,255,255,0.1)' : 'rgba(255,255,255,0.03)',
+                      color: active ? 'var(--brand-cyan)' : 'var(--text-muted)',
+                      transition: 'all 0.2s',
+                      boxShadow: active ? '0 0 8px rgba(0,255,255,0.2)' : 'none'
+                    }}
+                  >
+                    {FIcon && <FIcon size={11} />}
+                    {f.label}
+                    {f.id === 'all' && <span style={{ opacity: 0.6 }}>({userTickets.length})</span>}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
           {userTickets.length === 0 ? (
             <div className="glass-panel" style={{ padding: '64px', textAlign: 'center', color: 'var(--text-muted)' }}>
               <Ticket size={40} style={{ margin: '0 auto 16px', display: 'block', opacity: 0.3 }} />
               <p style={{ margin: 0, fontSize: '14px' }}>Bạn chưa có vé nào</p>
             </div>
+          ) : filteredTickets.length === 0 ? (
+            <div className="glass-panel" style={{ padding: '48px', textAlign: 'center', color: 'var(--text-muted)' }}>
+              <Ticket size={32} style={{ margin: '0 auto 12px', display: 'block', opacity: 0.25 }} />
+              <p style={{ margin: 0, fontSize: '13px' }}>Không có vé nào phù hợp bộ lọc</p>
+            </div>
           ) : (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
-              {userTickets.map(ticket => {
-                const isReselling = ticket.status === 'reselling';
+              {filteredTickets.map(ticket => {
+                const { isUsed, isExpired, isReselling } = getTicketStatus(ticket);
                 const isExpanded = expandedTicket === ticket.id;
+
+                // Badge
+                let badgeBg = 'var(--brand-emerald)';
+                let badgeLabel = 'ACTIVE';
+                let badgeColor = '#000';
+                if (isUsed) { badgeBg = 'rgba(100,100,100,0.85)'; badgeLabel = 'ĐÃ DÙNG'; badgeColor = '#fff'; }
+                else if (isExpired) { badgeBg = 'var(--brand-rose)'; badgeLabel = 'HẾT HẠN'; }
+                else if (isReselling) { badgeBg = 'var(--brand-gold)'; badgeLabel = 'ĐANG BÁN'; }
+
+
                 return (
-                  <div key={ticket.id} className="glass-panel" style={{ padding: 0, overflow: 'hidden' }}>
+                  <div key={ticket.id} className="glass-panel" style={{
+                    padding: 0, overflow: 'hidden',
+                    opacity: (isUsed || isExpired) ? 0.72 : 1,
+                    transition: 'opacity 0.2s'
+                  }}>
                     {/* Image */}
                     {ticket.image && (
                       <div style={{ height: '110px', overflow: 'hidden', position: 'relative' }}>
-                        <img src={ticket.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        <img
+                          src={ticket.image} alt=""
+                          style={{ width: '100%', height: '100%', objectFit: 'cover', filter: (isUsed || isExpired) ? 'grayscale(45%)' : 'none' }}
+                        />
                         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, transparent 40%, rgba(0,0,0,0.65))' }} />
                         <span style={{
                           position: 'absolute', bottom: '8px', right: '8px',
                           fontSize: '9px', fontFamily: 'var(--font-mono)', fontWeight: 700,
                           padding: '2px 6px', borderRadius: '4px',
-                          background: isReselling ? 'var(--brand-gold)' : 'var(--brand-emerald)', color: '#000'
+                          background: badgeBg, color: badgeColor
                         }}>
-                          {isReselling ? 'ĐANG BÁN' : 'ACTIVE'}
+                          {badgeLabel}
                         </span>
                       </div>
                     )}
@@ -515,7 +612,7 @@ export default function AccountPage({
                               ? ['Loại vé', 'Vé tham dự trực tuyến']
                               : ['Ghế', ticket.seatNumber || 'Khu đứng (GA)'],
                             ['Giá', fmt(ticket.price)],
-                            ['Trạng thái', isReselling ? 'Đang rao bán lại' : 'Đang sử dụng']
+                            ['Trạng thái', isUsed ? 'Đã sử dụng' : isExpired ? 'Hết hạn sử dụng' : isReselling ? 'Đang rao bán lại' : 'Còn hiệu lực']
                           ].map(([k, v]) => (
                             <div key={k} style={{ display: 'flex', justifyContent: 'space-between', gap: '8px' }}>
                               <span style={{ color: 'var(--ticket-label)', fontFamily: 'var(--font-mono)', fontSize: '10px', flexShrink: 0, paddingTop: '1px' }}>{k}</span>
@@ -572,7 +669,16 @@ export default function AccountPage({
                         )}
 
                         {/* Action buttons */}
-                        {!isReselling ? (
+                        {isUsed || isExpired ? (
+                          <div style={{
+                            width: '100%', padding: '8px', borderRadius: '6px', textAlign: 'center',
+                            border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.03)',
+                            color: 'var(--text-muted)', fontSize: '11px', fontFamily: 'var(--font-mono)',
+                            letterSpacing: '0.05em'
+                          }}>
+                            {isUsed ? '✓ Đã sử dụng' : '✗ Hết hạn sử dụng'}
+                          </div>
+                        ) : !isReselling ? (
                           <button
                             style={{
                               width: '100%', padding: '8px', borderRadius: '6px',

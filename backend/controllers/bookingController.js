@@ -115,6 +115,7 @@ export const getWalletTickets = async (req, res) => {
         price: ticketData.zone ? ticketData.zone.price : 0,
         eventType: ticketData.event?.eventType || 'live',
         platform: ticketData.event?.platform || null,
+        eventDate: ticketData.event?.date || null, // ISO date string, dùng để xác định còn/hết hạn
         onlineLink: (ticketData.status === 'active' && ticketData.event?.eventType === 'online') ? (ticketData.event.onlineLink || null) : null,
         onlinePassword: (ticketData.status === 'active' && ticketData.event?.eventType === 'online') ? (ticketData.event.onlinePassword || null) : null,
         onlineInstructions: (ticketData.status === 'active' && ticketData.event?.eventType === 'online') ? (ticketData.event.onlineInstructions || null) : null
