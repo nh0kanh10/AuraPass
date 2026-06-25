@@ -25,6 +25,7 @@ export default function SeatMap({ event, onBack, onProceedCheckout, showAlert })
   const [takenSeats, setTakenSeats] = useState([]);
   const [loadingTakenSeats, setLoadingTakenSeats] = useState(false);
   const [allZoneTakenSeats, setAllZoneTakenSeats] = useState({});
+  const [workshopLoaded, setWorkshopLoaded] = useState(false);
 
 
   useEffect(() => {
@@ -61,15 +62,21 @@ export default function SeatMap({ event, onBack, onProceedCheckout, showAlert })
     if (event.eventType !== 'workshop') return;
     (async () => {
       const results = {};
-      await Promise.all(
-        (event.zones || []).filter(z => !z.isStanding).map(async zone => {
-          try {
-            const r = await fetch(`http://localhost:5000/api/bookings/taken-seats?zoneId=${zone.id}`);
-            if (r.ok) results[zone.id] = await r.json();
-          } catch {}
-        })
-      );
-      setAllZoneTakenSeats(results);
+      try {
+        await Promise.all(
+          (event.zones || []).filter(z => !z.isStanding).map(async zone => {
+            try {
+              const r = await fetch(`http://localhost:5000/api/bookings/taken-seats?zoneId=${zone.id}`);
+              results[zone.id] = r.ok ? await r.json() : [];
+            } catch {
+              results[zone.id] = [];
+            }
+          })
+        );
+      } finally {
+        setAllZoneTakenSeats(results);
+        setWorkshopLoaded(true);
+      }
     })();
   }, []);
 
@@ -381,6 +388,7 @@ export default function SeatMap({ event, onBack, onProceedCheckout, showAlert })
 
           {/* LEFT: Floor plan panel */}
           <div style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', borderRadius: '24px', padding: '36px', display: 'flex', flexDirection: 'column', gap: '28px' }}>
+            <style>{`@keyframes wsSpinLoad { to { transform: rotate(360deg); } }`}</style>
 
             <div>
               <span style={{ fontFamily: 'var(--font-mono)', fontSize: '9.5px', letterSpacing: '0.12em', color: 'var(--brand-cyan)', textTransform: 'uppercase', fontWeight: 600 }}>Workshop Floor Plan</span>
@@ -410,7 +418,12 @@ export default function SeatMap({ event, onBack, onProceedCheckout, showAlert })
             {/* Tables grid */}
             {seatedZones.length > 0 && (
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '24px', justifyContent: 'center' }}>
-                {seatedZones.map(zone => renderTable(zone))}
+                {!workshopLoaded ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', color: 'var(--text-muted)', fontSize: '13px', padding: '48px 0', width: '100%', justifyContent: 'center' }}>
+                    <div style={{ width: 18, height: 18, borderRadius: '50%', border: '2px solid var(--brand-cyan)', borderTopColor: 'transparent', animation: 'wsSpinLoad 0.75s linear infinite' }} />
+                    Đang tải sơ đồ chỗ ngồi...
+                  </div>
+                ) : seatedZones.map(zone => renderTable(zone))}
               </div>
             )}
 
