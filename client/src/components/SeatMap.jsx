@@ -314,7 +314,7 @@ export default function SeatMap({ event, onBack, onProceedCheckout, showAlert })
               const cx = CONT / 2 + Math.cos(angle) * ORBIT - CH_R;
               const cy = CONT / 2 + Math.sin(angle) * ORBIT - CH_R;
               const seatId = `${i + 1}`;
-              const isTaken = taken.includes(seatId);
+              const isTaken = taken.some(t => t === seatId || t.endsWith(`-${seatId}`));
               const isSel = selectedSeats.includes(`${zone.id}:${seatId}`);
               return (
                 <div key={i}
@@ -519,11 +519,8 @@ export default function SeatMap({ event, onBack, onProceedCheckout, showAlert })
                   event,
                   zone: firstZone,
                   count: wsCount,
-                  seats: selectedSeats.map(k => {
-                    const [zId, sn] = k.split(':');
-                    const z = normalizedZones.find(z => z.id === zId);
-                    return `${z?.name || zId}-${sn}`;
-                  }),
+                  seats: selectedSeats.map(k => k.split(':')[1]),
+                  perSeatZoneIds: selectedSeats.map(k => k.split(':')[0]),
                   totalPrice: wsTotal
                 });
               }}

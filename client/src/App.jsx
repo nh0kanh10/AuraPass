@@ -327,7 +327,7 @@ function App() {
 
   const handleConfirmBooking = async (formDetails) => {
     if (bookingDetails) {
-      const { event, zone, count, seats, totalPrice } = bookingDetails;
+      const { event, zone, count, seats, totalPrice, perSeatZoneIds } = bookingDetails;
       const { fullName, email, phone } = formDetails;
       
       if (currentView === 'resaleCheckout' && selectedResaleTicket) {
@@ -371,6 +371,7 @@ function App() {
               zoneId: zone.id,
               count,
               seats,
+              perSeatZoneIds: perSeatZoneIds || null,
               totalPrice,
               fullName,
               email,

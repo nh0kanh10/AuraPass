@@ -3,19 +3,29 @@ import { Booking, Ticket, Zone, Event, sequelize } from '../models/index.js';
 
 export const createBooking = async (req, res) => {
   const {
-    userId, eventId, zoneId, count, seats, totalPrice, fullName, email, phone, paymentStatus: reqPaymentStatus
+    userId, eventId, zoneId, count, seats, totalPrice,
+    fullName, email, phone, paymentStatus: reqPaymentStatus,
+    perSeatZoneIds
   } = req.body;
 
   const t = await sequelize.transaction();
 
   try {
-    const zone = await Zone.findByPk(zoneId, { transaction: t });
-    if (!zone || zone.availableTickets < count) {
-      throw new Error('Số lượng vé còn lại không đủ');
-    }
-
     const event = await Event.findByPk(eventId, { transaction: t });
     if (!event) throw new Error('Không tìm thấy sự kiện');
+
+    // Availability check — multi-zone (workshop) or single-zone
+    if (perSeatZoneIds && perSeatZoneIds.length > 0) {
+      const zoneCounts = {};
+      perSeatZoneIds.forEach(zId => { zoneCounts[zId] = (zoneCounts[zId] || 0) + 1; });
+      for (const [tzId, cnt] of Object.entries(zoneCounts)) {
+        const tz = await Zone.findByPk(tzId, { transaction: t });
+        if (!tz || tz.availableTickets < cnt) throw new Error('Số lượng vé còn lại không đủ');
+      }
+    } else {
+      const zone = await Zone.findByPk(zoneId, { transaction: t });
+      if (!zone || zone.availableTickets < count) throw new Error('Số lượng vé còn lại không đủ');
+    }
 
     const bookingId = `booking-${Date.now()}`;
     const repTicketId = `AP-${Math.floor(100000 + Math.random() * 900000)}`;
@@ -39,12 +49,13 @@ export const createBooking = async (req, res) => {
     const newTickets = [];
     for (let i = 0; i < count; i++) {
       const seat = seats && seats[i] ? seats[i] : null;
+      const ticketZoneId = (perSeatZoneIds && perSeatZoneIds[i]) ? perSeatZoneIds[i] : zoneId;
       const ticket = await Ticket.create({
         id: `ticket-${Date.now()}-${i}`,
         bookingId,
         userId: userId || 'user-1',
         eventId,
-        zoneId,
+        zoneId: ticketZoneId,
         seatNumber: seat,
         qrCode: `QR-AP-${Math.floor(100000 + Math.random() * 900000)}-${i}`,
         status: reqPaymentStatus === 'Paid' ? 'active' : 'inactive',
@@ -53,9 +64,18 @@ export const createBooking = async (req, res) => {
       newTickets.push(ticket);
     }
 
-    await zone.update({
-      availableTickets: zone.availableTickets - count
-    }, { transaction: t });
+    // Decrement availability per zone
+    if (perSeatZoneIds && perSeatZoneIds.length > 0) {
+      const zoneCounts = {};
+      perSeatZoneIds.forEach(zId => { zoneCounts[zId] = (zoneCounts[zId] || 0) + 1; });
+      for (const [tzId, cnt] of Object.entries(zoneCounts)) {
+        const tz = await Zone.findByPk(tzId, { transaction: t });
+        if (tz) await tz.update({ availableTickets: tz.availableTickets - cnt }, { transaction: t });
+      }
+    } else {
+      const zone = await Zone.findByPk(zoneId, { transaction: t });
+      await zone.update({ availableTickets: zone.availableTickets - count }, { transaction: t });
+    }
 
     await t.commit();
     res.status(201).json({ booking: newBooking, tickets: newTickets });
