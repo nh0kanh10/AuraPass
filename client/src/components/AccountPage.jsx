@@ -493,31 +493,33 @@ export default function AccountPage({
 
                     {/* Expanded detail */}
                     {isExpanded && (
-                      <div style={{ borderTop: '1px dashed rgba(255,255,255,0.08)', padding: '16px', background: 'rgba(0,0,0,0.2)' }}>
+                      <div style={{ borderTop: '1px solid var(--ticket-divider)', padding: '16px', background: 'var(--ticket-body-bg)' }}>
                         {/* QR area */}
                         <div style={{
-                          padding: '14px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px',
-                          marginBottom: '14px', textAlign: 'center', border: '1px dashed rgba(255,255,255,0.1)'
+                          padding: '14px', background: 'var(--ticket-qr-bg)', borderRadius: '8px',
+                          marginBottom: '14px', textAlign: 'center', border: '1px dashed var(--ticket-divider)'
                         }}>
-                          <QrCode size={28} style={{ margin: '0 auto 8px', display: 'block', opacity: 0.5 }} />
-                          <div style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', color: 'var(--text-muted)', letterSpacing: '0.06em', wordBreak: 'break-all' }}>
+                          <QrCode size={28} style={{ margin: '0 auto 8px', display: 'block', color: 'var(--ticket-label)' }} />
+                          <div style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', color: 'var(--ticket-label)', letterSpacing: '0.06em', wordBreak: 'break-all' }}>
                             {ticket.qrCode}
                           </div>
                         </div>
 
                         {/* Info rows */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '14px' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '9px', marginBottom: '14px' }}>
                           {[
                             ['Mã vé', ticket.id],
                             ['Sự kiện', ticket.eventTitle],
                             ['Khu vực', ticket.zoneName],
-                            ['Ghế', ticket.seatNumber || 'Khu đứng'],
+                            ticket.eventType === 'online'
+                              ? ['Loại vé', 'Vé tham dự trực tuyến']
+                              : ['Ghế', ticket.seatNumber || 'Khu đứng (GA)'],
                             ['Giá', fmt(ticket.price)],
                             ['Trạng thái', isReselling ? 'Đang rao bán lại' : 'Đang sử dụng']
                           ].map(([k, v]) => (
-                            <div key={k} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', gap: '8px' }}>
-                              <span style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontSize: '10px', flexShrink: 0 }}>{k}</span>
-                              <span style={{ color: 'var(--text-primary)', fontWeight: 500, textAlign: 'right', wordBreak: 'break-all' }}>{v}</span>
+                            <div key={k} style={{ display: 'flex', justifyContent: 'space-between', gap: '8px' }}>
+                              <span style={{ color: 'var(--ticket-label)', fontFamily: 'var(--font-mono)', fontSize: '10px', flexShrink: 0, paddingTop: '1px' }}>{k}</span>
+                              <span style={{ color: 'var(--ticket-value)', fontWeight: 600, fontSize: '12px', textAlign: 'right', wordBreak: 'break-all' }}>{v}</span>
                             </div>
                           ))}
                         </div>
