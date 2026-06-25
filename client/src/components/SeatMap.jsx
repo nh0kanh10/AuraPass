@@ -314,7 +314,13 @@ export default function SeatMap({ event, onBack, onProceedCheckout, showAlert })
               const cx = CONT / 2 + Math.cos(angle) * ORBIT - CH_R;
               const cy = CONT / 2 + Math.sin(angle) * ORBIT - CH_R;
               const seatId = `${i + 1}`;
-              const isTaken = taken.some(t => t === seatId || t.endsWith(`-${seatId}`));
+              const isTaken = taken.some(t => {
+                if (t === seatId) return true;
+                // legacy format "ZoneName-N": only match if zone name also matches
+                const dash = t.lastIndexOf('-');
+                if (dash === -1) return false;
+                return t.substring(0, dash) === zone.name && t.substring(dash + 1) === seatId;
+              });
               const isSel = selectedSeats.includes(`${zone.id}:${seatId}`);
               return (
                 <div key={i}
