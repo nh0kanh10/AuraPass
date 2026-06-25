@@ -1832,8 +1832,8 @@ export default function Header({
               padding: 16px;
               display: flex;
               gap: 16px;
+              align-items: flex-start;
               position: relative;
-              overflow: hidden;
               transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
               box-shadow: var(--glass-shadow);
               backdrop-filter: blur(12px);
@@ -1861,9 +1861,9 @@ export default function Header({
             .my-evt-info {
               display: flex;
               flex-direction: column;
-              flex-grow: 1;
+              flex: 1;
               min-width: 0;
-              justify-content: space-between;
+              gap: 5px;
             }
             .my-evt-title {
               font-size: 15px;
@@ -1895,8 +1895,10 @@ export default function Header({
             }
             .my-evt-actions {
               display: flex;
-              gap: 8px;
-              margin-top: 10px;
+              flex-direction: column;
+              gap: 7px;
+              flex-shrink: 0;
+              align-self: center;
               z-index: 5;
             }
             .my-evt-btn {
@@ -2626,17 +2628,17 @@ export default function Header({
                           </div>
 
                           <div className="my-evt-price">Giá: {event.priceRange}</div>
+                        </div>
 
-                          <div className="my-evt-actions">
-                            <button className="my-evt-btn my-evt-btn-view" onClick={() => startViewEvent(event)}>
-                              <Eye size={11} />
-                              <span>Chi tiết</span>
-                            </button>
-                            <button className="my-evt-btn my-evt-btn-edit" onClick={() => startEditEvent(event)}>
-                              <Pencil size={10} />
-                              <span>Sửa</span>
-                            </button>
-                          </div>
+                        <div className="my-evt-actions">
+                          <button className="my-evt-btn my-evt-btn-view" onClick={() => startViewEvent(event)}>
+                            <Eye size={11} />
+                            <span>Chi tiết</span>
+                          </button>
+                          <button className="my-evt-btn my-evt-btn-edit" onClick={() => startEditEvent(event)}>
+                            <Pencil size={10} />
+                            <span>Sửa</span>
+                          </button>
                         </div>
                       </div>
                     );
