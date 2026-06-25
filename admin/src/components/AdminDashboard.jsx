@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { 
-  LayoutDashboard, Calendar, Ticket, User, Users, PlusCircle, Trash2, 
-  Edit, Check, X, RefreshCw, BarChart2, DollarSign, Package, Activity, 
+  LayoutDashboard, Calendar, Ticket, User, Users, PlusCircle, Trash2,
+  Edit, Check, X, RefreshCw, BarChart2, DollarSign, Package, Activity,
   ArrowLeft, MapPin, Tag, Armchair, ChevronRight, Save, ShieldAlert, Key,
-  CheckSquare, UserPlus, Sun, Moon
+  CheckSquare, UserPlus, Sun, Moon, Mic, Monitor
 } from 'lucide-react';
 
 function CustomSelect({ label, value, onChange, options, placeholder = '-- Chọn --', small = false }) {
@@ -490,6 +490,22 @@ export default function AdminDashboard({
   const [newZoneRows, setNewZoneRows] = useState('');
   const [newZoneCols, setNewZoneCols] = useState('');
 
+  const handleAdminEventTypeChange = (val) => {
+    setEventEventType(val);
+    setNewZoneName('');
+    setNewZonePrice('');
+    if (val === 'workshop') {
+      setEventZones([
+        { id: `zone-t1-${Date.now()}`, name: 'Bàn 1', price: 300000, isStanding: false, availableTickets: 6, rows: null, cols: null },
+        { id: `zone-t2-${Date.now()}`, name: 'Bàn 2', price: 300000, isStanding: false, availableTickets: 6, rows: null, cols: null },
+      ]);
+      setNewZoneCapacity('6');
+    } else if (val === 'live') {
+      setEventZones([]);
+      setNewZoneCapacity('');
+    }
+  };
+
   const [editingCreatorId, setEditingCreatorId] = useState(null);
   const [creatorName, setCreatorName] = useState('');
   const [creatorType, setCreatorType] = useState('Ca Sĩ');
@@ -965,42 +981,36 @@ export default function AdminDashboard({
   };
 
   const handleAddZone = async () => {
-    if (eventZones.length >= 3) {
-      await showAlert("Chỉ cho phép tạo tối đa 3 phân khu cho mỗi sự kiện");
+    const isWS = eventEventType === 'workshop';
+    const maxZ = isWS ? 6 : 3;
+    if (eventZones.length >= maxZ) {
+      await showAlert(`Chỉ cho phép tạo tối đa ${maxZ} ${isWS ? 'bàn' : 'phân khu'} cho mỗi sự kiện`);
       return;
     }
     if (!newZoneName || !newZonePrice) {
-      await showAlert("Điền thông tin phân khu");
+      await showAlert(`Điền thông tin ${isWS ? 'bàn' : 'phân khu'}`);
+      return;
+    }
+    if (isWS) {
+      const chairs = Math.min(14, Math.max(1, Number(newZoneCapacity) || 6));
+      setEventZones([...eventZones, { id: `zone-${Date.now()}`, name: newZoneName, price: Number(newZonePrice), isStanding: false, availableTickets: chairs, rows: null, cols: null }]);
+      setNewZoneName('');
+      setNewZoneCapacity('6');
       return;
     }
     let capacity = 0;
     let rows = null;
     let cols = null;
     if (newZoneIsStanding) {
-      if (!newZoneCapacity) {
-        await showAlert("Vui lòng nhập số vé đăng ký");
-        return;
-      }
+      if (!newZoneCapacity) { await showAlert("Vui lòng nhập số vé đăng ký"); return; }
       capacity = Number(newZoneCapacity);
     } else {
-      if (!newZoneRows || !newZoneCols) {
-        await showAlert("Vui lòng nhập số hàng và số ghế mỗi hàng");
-        return;
-      }
+      if (!newZoneRows || !newZoneCols) { await showAlert("Vui lòng nhập số hàng và số ghế mỗi hàng"); return; }
       rows = Number(newZoneRows);
       cols = Number(newZoneCols);
       capacity = rows * cols;
     }
-    const newZone = {
-      id: `zone-${Date.now()}`,
-      name: newZoneName,
-      price: Number(newZonePrice),
-      isStanding: newZoneIsStanding,
-      availableTickets: capacity,
-      rows: rows,
-      cols: cols
-    };
-    setEventZones([...eventZones, newZone]);
+    setEventZones([...eventZones, { id: `zone-${Date.now()}`, name: newZoneName, price: Number(newZonePrice), isStanding: newZoneIsStanding, availableTickets: capacity, rows, cols }]);
     setNewZoneName('');
     setNewZonePrice('');
     setNewZoneCapacity('');
@@ -1770,8 +1780,8 @@ export default function AdminDashboard({
         .admin-form-input,
         .admin-form-textarea,
         .admin-form-select {
-          background: var(--admin-input-bg, rgba(255, 255, 255, 0.02));
-          border: 1px solid var(--admin-input-border, rgba(255, 255, 255, 0.08));
+          background: var(--admin-input-bg, rgba(255, 255, 255, 0.07));
+          border: 1px solid var(--admin-input-border, rgba(255, 255, 255, 0.18));
           border-radius: 8px;
           padding: 10px 14px;
           color: var(--admin-input-color, #fff);
@@ -1791,7 +1801,7 @@ export default function AdminDashboard({
         .admin-form-textarea:focus,
         .admin-form-select:focus {
           border-color: var(--brand-violet, rgba(167, 139, 250, 0.45));
-          background: var(--admin-input-bg-focus, rgba(255, 255, 255, 0.04));
+          background: var(--admin-input-bg-focus, rgba(255, 255, 255, 0.12));
         }
 
         .admin-custom-picker-container {
@@ -2042,8 +2052,8 @@ export default function AdminDashboard({
         }
 
         .admin-custom-select-trigger {
-          background: var(--admin-input-bg, rgba(255, 255, 255, 0.02));
-          border: 1px solid var(--admin-input-border, rgba(255, 255, 255, 0.08));
+          background: var(--admin-input-bg, rgba(255, 255, 255, 0.07));
+          border: 1px solid var(--admin-input-border, rgba(255, 255, 255, 0.18));
           border-radius: 8px;
           padding: 10px 14px;
           color: var(--admin-input-color, #fff);
@@ -2060,7 +2070,7 @@ export default function AdminDashboard({
         .admin-custom-select-trigger:hover,
         .admin-custom-select-trigger.active {
           border-color: var(--brand-violet, rgba(167, 139, 250, 0.45));
-          background: var(--admin-input-bg-focus, rgba(255, 255, 255, 0.04));
+          background: var(--admin-input-bg-focus, rgba(255, 255, 255, 0.12));
         }
 
         .select-arrow-icon {
@@ -2671,7 +2681,7 @@ export default function AdminDashboard({
                   </div>
                 </div>
               ) : (
-                <form onSubmit={handleSaveEvent} className="glass-panel" style={{ padding: '28px', background: 'var(--glass-bg)' }}>
+                <form onSubmit={handleSaveEvent} className="glass-panel" style={{ padding: '28px', background: 'rgba(255,255,255,0.08)' }}>
                   <h3 style={{ fontSize: '18px', color: 'var(--text-white)', fontFamily: 'var(--font-display)', marginBottom: '24px', borderBottom: '1px solid var(--glass-border)', paddingBottom: '12px' }}>
                     {editingEventId === 'new' ? 'Tạo Sự Kiện Mới' : `Chỉnh sửa: ${eventTitle}`}
                   </h3>
@@ -2801,18 +2811,19 @@ export default function AdminDashboard({
                   <div className="admin-form-group">
                     <label className="admin-form-label">Loại Sự Kiện</label>
                     <div style={{ display: 'flex', gap: '10px' }}>
-                      {[{ val: 'live', label: '🎤 Trực tiếp' }, { val: 'online', label: '💻 Trực tuyến' }, { val: 'workshop', label: '🪑 Workshop' }].map(opt => (
+                      {[{ val: 'live', Icon: Mic, label: 'Trực tiếp' }, { val: 'online', Icon: Monitor, label: 'Trực tuyến' }, { val: 'workshop', Icon: Users, label: 'Workshop' }].map(({ val, Icon, label }) => (
                         <button
-                          key={opt.val}
+                          key={val}
                           type="button"
-                          onClick={() => setEventEventType(opt.val)}
+                          onClick={() => handleAdminEventTypeChange(val)}
                           style={{
-                            padding: '8px 18px', borderRadius: '8px', border: `1px solid ${eventEventType === opt.val ? '#a78bfa' : 'rgba(255,255,255,0.15)'}`,
-                            background: eventEventType === opt.val ? 'rgba(167,139,250,0.15)' : 'rgba(255,255,255,0.04)',
-                            color: eventEventType === opt.val ? '#a78bfa' : 'rgba(255,255,255,0.6)',
-                            fontSize: '13px', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s'
+                            flex: 1, padding: '8px 12px', borderRadius: '8px', border: `1px solid ${eventEventType === val ? '#a78bfa' : 'rgba(255,255,255,0.18)'}`,
+                            background: eventEventType === val ? 'rgba(167,139,250,0.15)' : 'rgba(255,255,255,0.06)',
+                            color: eventEventType === val ? '#a78bfa' : 'var(--text-muted)',
+                            fontSize: '13px', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px'
                           }}
-                        >{opt.label}</button>
+                        ><Icon size={13} strokeWidth={2} />{label}</button>
                       ))}
                     </div>
                   </div>
@@ -2906,11 +2917,51 @@ export default function AdminDashboard({
                     />
                   </div>
 
-                  {eventEventType !== 'online' && (<div style={{ borderTop: '1px solid var(--glass-border)', paddingTop: '20px', marginTop: '20px' }}>
+                  {eventEventType === 'workshop' && (<div style={{ borderTop: '1px solid var(--glass-border)', paddingTop: '20px', marginTop: '20px' }}>
+                    <h4 style={{ color: 'var(--text-white)', fontSize: '15px', fontFamily: 'var(--font-display)', margin: '0 0 16px 0' }}>
+                      Cấu Hình Bàn Workshop ({eventZones.length}/6)
+                    </h4>
+                    <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 48px', gap: '12px', alignItems: 'end', marginBottom: '16px' }}>
+                      <div className="admin-form-group" style={{ marginBottom: 0 }}>
+                        <label className="admin-form-label" style={{ fontSize: '11px' }}>Tên Bàn</label>
+                        <input type="text" placeholder="Bàn VIP, Bàn A..." value={newZoneName} onChange={(e) => setNewZoneName(e.target.value)} className="admin-form-input" style={{ padding: '8px', minHeight: '38px', fontSize: '13.5px' }} />
+                      </div>
+                      <div className="admin-form-group" style={{ marginBottom: 0 }}>
+                        <label className="admin-form-label" style={{ fontSize: '11px' }}>Ghế / Bàn (≤14)</label>
+                        <input type="number" min="1" max="14" placeholder="6" value={newZoneCapacity} onChange={(e) => setNewZoneCapacity(e.target.value)} className="admin-form-input" style={{ padding: '8px', minHeight: '38px', fontSize: '13.5px' }} />
+                      </div>
+                      <div className="admin-form-group" style={{ marginBottom: 0 }}>
+                        <label className="admin-form-label" style={{ fontSize: '11px' }}>Giá / Ghế (VNĐ)</label>
+                        <input type="number" placeholder="300000" value={newZonePrice} onChange={(e) => setNewZonePrice(e.target.value)} className="admin-form-input" style={{ padding: '8px', minHeight: '38px', fontSize: '13.5px' }} />
+                      </div>
+                      <button type="button" onClick={handleAddZone} disabled={eventZones.length >= 6} style={{ padding: 0, height: '38px', width: '48px', borderRadius: '8px', cursor: eventZones.length >= 6 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', background: eventZones.length >= 6 ? 'rgba(255,255,255,0.05)' : 'linear-gradient(135deg, #a78bfa, #8b5cf6)', color: eventZones.length >= 6 ? 'rgba(255,255,255,0.2)' : '#fff', boxSizing: 'border-box' }}>
+                        <PlusCircle size={18} />
+                      </button>
+                    </div>
+                    <div style={{ marginTop: '8px', marginBottom: '16px', fontSize: '11px', color: 'var(--text-muted)', lineHeight: '1.4' }}>
+                      * Mỗi bàn tối đa 14 ghế. Người dùng sẽ chọn ghế cụ thể quanh bàn khi đặt vé. Tối đa 6 bàn.
+                    </div>
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '20px' }}>
+                      {eventZones.map((z) => (
+                        <div key={z.id} className="zone-pill-item">
+                          <div>
+                            <strong style={{ color: '#fff' }}>{z.name}</strong>
+                            <span style={{ opacity: 0.6, fontSize: '10px', marginLeft: '6px' }}>
+                              ({z.availableTickets} ghế) - {formatPrice(z.price)}/ghế
+                            </span>
+                          </div>
+                          <button type="button" onClick={() => handleRemoveZone(z.id)} style={{ background: 'none', border: 'none', color: 'oklch(70% 0.18 30)', cursor: 'pointer', padding: 0 }}>
+                            <X size={14} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>)}
+
+                  {eventEventType === 'live' && (<div style={{ borderTop: '1px solid var(--glass-border)', paddingTop: '20px', marginTop: '20px' }}>
                     <h4 style={{ color: 'var(--text-white)', fontSize: '15px', fontFamily: 'var(--font-display)', margin: '0 0 16px 0' }}>
                       Cấu Hình Phân Khu Vé ({eventZones.length}/3)
                     </h4>
-                    
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr) 48px', gap: '12px', alignItems: 'end', marginBottom: '16px' }}>
                       <div className="admin-form-group" style={{ marginBottom: 0 }}>
                         <label className="admin-form-label" style={{ fontSize: '11px' }}>Tên Phân Khu</label>
@@ -2921,115 +2972,37 @@ export default function AdminDashboard({
                         <input type="number" placeholder="2500000" value={newZonePrice} onChange={(e) => setNewZonePrice(e.target.value)} className="admin-form-input" style={{ padding: '8px', minHeight: '38px', fontSize: '13.5px' }} />
                       </div>
                       <div className="admin-form-group" style={{ marginBottom: 0 }}>
-                        <CustomSelect 
-                          label="Vé Đứng GA?" 
-                          value={newZoneIsStanding ? '1' : '0'} 
-                          onChange={(val) => setNewZoneIsStanding(val === '1')} 
-                          small={true}
-                          options={[
-                            { value: '0', label: 'Ghế ngồi' },
-                            { value: '1', label: 'Đứng GA' }
-                          ]} 
-                        />
+                        <CustomSelect label="Vé Đứng GA?" value={newZoneIsStanding ? '1' : '0'} onChange={(val) => setNewZoneIsStanding(val === '1')} small={true} options={[{ value: '0', label: 'Ghế ngồi' }, { value: '1', label: 'Đứng GA' }]} />
                       </div>
                       <div className="admin-form-group" style={{ marginBottom: 0 }}>
                         <label className="admin-form-label" style={{ fontSize: '11px' }}>Số Hàng Ghế</label>
-                        <input 
-                          type="number" 
-                          placeholder="3" 
-                          disabled={newZoneIsStanding}
-                          value={newZoneIsStanding ? '' : newZoneRows} 
-                          onChange={(e) => setNewZoneRows(e.target.value)} 
-                          className="admin-form-input" 
-                          style={{ 
-                            padding: '8px', 
-                            minHeight: '38px', 
-                            fontSize: '13.5px',
-                            opacity: newZoneIsStanding ? 0.35 : 1,
-                            cursor: newZoneIsStanding ? 'not-allowed' : 'text'
-                          }} 
-                        />
+                        <input type="number" placeholder="3" disabled={newZoneIsStanding} value={newZoneIsStanding ? '' : newZoneRows} onChange={(e) => setNewZoneRows(e.target.value)} className="admin-form-input" style={{ padding: '8px', minHeight: '38px', fontSize: '13.5px', opacity: newZoneIsStanding ? 0.35 : 1 }} />
                       </div>
                       <div className="admin-form-group" style={{ marginBottom: 0 }}>
                         <label className="admin-form-label" style={{ fontSize: '11px' }}>Ghế mỗi hàng</label>
-                        <input 
-                          type="number" 
-                          placeholder="5" 
-                          disabled={newZoneIsStanding}
-                          value={newZoneIsStanding ? '' : newZoneCols} 
-                          onChange={(e) => setNewZoneCols(e.target.value)} 
-                          className="admin-form-input" 
-                          style={{ 
-                            padding: '8px', 
-                            minHeight: '38px', 
-                            fontSize: '13.5px',
-                            opacity: newZoneIsStanding ? 0.35 : 1,
-                            cursor: newZoneIsStanding ? 'not-allowed' : 'text'
-                          }} 
-                        />
+                        <input type="number" placeholder="5" disabled={newZoneIsStanding} value={newZoneIsStanding ? '' : newZoneCols} onChange={(e) => setNewZoneCols(e.target.value)} className="admin-form-input" style={{ padding: '8px', minHeight: '38px', fontSize: '13.5px', opacity: newZoneIsStanding ? 0.35 : 1 }} />
                       </div>
                       <div className="admin-form-group" style={{ marginBottom: 0 }}>
-                        <label className="admin-form-label" style={{ fontSize: '11px' }}>
-                          {newZoneIsStanding ? 'Số Vé Đăng Ký' : 'Tổng Số Ghế'}
-                        </label>
-                        <input 
-                          type="number" 
-                          placeholder="100"
-                          disabled={!newZoneIsStanding}
-                          value={newZoneIsStanding ? newZoneCapacity : (newZoneRows && newZoneCols ? Number(newZoneRows) * Number(newZoneCols) : 0)} 
-                          onChange={(e) => setNewZoneCapacity(e.target.value)} 
-                          className="admin-form-input" 
-                          style={{ 
-                            padding: '8px', 
-                            minHeight: '38px', 
-                            fontSize: '13.5px',
-                            opacity: !newZoneIsStanding ? 0.6 : 1,
-                            cursor: !newZoneIsStanding ? 'not-allowed' : 'text'
-                          }} 
-                        />
+                        <label className="admin-form-label" style={{ fontSize: '11px' }}>{newZoneIsStanding ? 'Số Vé Đăng Ký' : 'Tổng Số Ghế'}</label>
+                        <input type="number" placeholder="100" disabled={!newZoneIsStanding} value={newZoneIsStanding ? newZoneCapacity : (newZoneRows && newZoneCols ? Number(newZoneRows) * Number(newZoneCols) : 0)} onChange={(e) => setNewZoneCapacity(e.target.value)} className="admin-form-input" style={{ padding: '8px', minHeight: '38px', fontSize: '13.5px', opacity: !newZoneIsStanding ? 0.6 : 1 }} />
                       </div>
-                      <button 
-                        type="button" 
-                        onClick={handleAddZone} 
-                        disabled={eventZones.length >= 3}
-                        style={{ 
-                          padding: 0, 
-                          height: '38px', 
-                          width: '48px',
-                          borderRadius: '8px', 
-                          cursor: eventZones.length >= 3 ? 'not-allowed' : 'pointer', 
-                          display: 'flex', 
-                          alignItems: 'center', 
-                          justifyContent: 'center',
-                          border: 'none',
-                          background: eventZones.length >= 3 ? 'rgba(255, 255, 255, 0.05)' : 'linear-gradient(135deg, #a78bfa, #8b5cf6)',
-                          color: eventZones.length >= 3 ? 'rgba(255, 255, 255, 0.2)' : '#fff',
-                          boxShadow: eventZones.length >= 3 ? 'none' : '0 0 12px rgba(139, 92, 246, 0.35)',
-                          boxSizing: 'border-box'
-                        }}
-                      >
+                      <button type="button" onClick={handleAddZone} disabled={eventZones.length >= 3} style={{ padding: 0, height: '38px', width: '48px', borderRadius: '8px', cursor: eventZones.length >= 3 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', background: eventZones.length >= 3 ? 'rgba(255,255,255,0.05)' : 'linear-gradient(135deg, #a78bfa, #8b5cf6)', color: eventZones.length >= 3 ? 'rgba(255,255,255,0.2)' : '#fff', boxShadow: eventZones.length >= 3 ? 'none' : '0 0 12px rgba(139,92,246,0.35)', boxSizing: 'border-box' }}>
                         <PlusCircle size={18} />
                       </button>
                     </div>
-
                     <div style={{ marginTop: '8px', marginBottom: '16px', fontSize: '11px', color: 'var(--text-muted)', lineHeight: '1.4' }}>
                       * Ghi chú: Đối với phân khu <strong>Đứng GA</strong>, bạn chỉ cần nhập tổng số vé đăng ký. Đối với phân khu <strong>Ghế ngồi</strong>, hệ thống tự động tính Tổng số ghế bằng Số hàng × Số ghế mỗi hàng và tự động sinh sơ đồ chọn ghế trực quan cho khách hàng.
                     </div>
-
                     <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '20px' }}>
                       {eventZones.map((z) => (
                         <div key={z.id} className="zone-pill-item">
                           <div>
-                            <strong style={{ color: '#fff' }}>{z.name}</strong> 
+                            <strong style={{ color: '#fff' }}>{z.name}</strong>
                             <span style={{ opacity: 0.6, fontSize: '10px', marginLeft: '6px' }}>
                               ({z.isStanding ? 'Đứng' : `${z.rows}x${z.cols}`}) - {formatPrice(z.price)} - SL: {z.availableTickets}
                             </span>
                           </div>
-                          <button 
-                            type="button" 
-                            onClick={() => handleRemoveZone(z.id)} 
-                            style={{ background: 'none', border: 'none', color: 'oklch(70% 0.18 30)', cursor: 'pointer', padding: 0 }}
-                          >
+                          <button type="button" onClick={() => handleRemoveZone(z.id)} style={{ background: 'none', border: 'none', color: 'oklch(70% 0.18 30)', cursor: 'pointer', padding: 0 }}>
                             <X size={14} />
                           </button>
                         </div>

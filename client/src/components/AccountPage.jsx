@@ -3,7 +3,8 @@ import { createPortal } from 'react-dom';
 import {
   ArrowLeft, User, Lock, Ticket, BarChart2, Plus, X, Edit2,
   ImagePlus, Loader, Trash2, DollarSign, Calendar, CheckCircle,
-  Clock, ChevronDown, QrCode, Video, ExternalLink, KeyRound
+  Clock, ChevronDown, QrCode, Video, ExternalLink, KeyRound,
+  Mic, Monitor, Users
 } from 'lucide-react';
 
 const fmt = (n) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n || 0);
@@ -23,11 +24,15 @@ const DEFAULT_ZONES = normalizeZones([
   { name: 'GA', price: 500000, isStanding: true, availableTickets: 200 },
   { name: 'VIP', price: 1500000, isStanding: false, availableTickets: 50 }
 ]);
+const DEFAULT_WORKSHOP_ZONES = [
+  { name: 'Bàn 1', price: 300000, isStanding: false, availableTickets: 6, rows: null, cols: null },
+  { name: 'Bàn 2', price: 300000, isStanding: false, availableTickets: 6, rows: null, cols: null },
+];
 
 const inputSt = {
   width: '100%', padding: '10px 14px',
-  background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)',
-  borderRadius: '8px', color: 'var(--text-primary)', fontSize: '14px',
+  background: 'var(--form-input-bg)', border: '1px solid var(--form-input-border)',
+  borderRadius: '8px', color: 'var(--form-input-color)', fontSize: '14px',
   fontFamily: 'var(--font-body)', outline: 'none', boxSizing: 'border-box', transition: 'border-color 0.2s'
 };
 
@@ -38,7 +43,7 @@ const labelSt = {
 
 const btnPrimSt = {
   background: 'linear-gradient(135deg, var(--brand-cyan), var(--brand-emerald))',
-  border: 'none', borderRadius: '8px', color: '#000', fontWeight: 700,
+  border: 'none', borderRadius: '8px', color: '#fff', fontWeight: 700,
   fontSize: '13px', padding: '10px 24px', cursor: 'pointer',
   fontFamily: 'var(--font-mono)', letterSpacing: '0.05em', transition: 'opacity 0.2s'
 };
@@ -169,8 +174,15 @@ export default function AccountPage({
   const [evtOnlinePrice, setEvtOnlinePrice] = useState(0);
   const [evtOnlineCapacity, setEvtOnlineCapacity] = useState(100);
   const [submittingEvt, setSubmittingEvt] = useState(false);
+  const [evtFormError, setEvtFormError] = useState('');
   const [uploadingImg, setUploadingImg] = useState(false);
   const imgRef = useRef(null);
+
+  const handleEvtTypeChange = (val) => {
+    setEvtEventType(val);
+    if (val === 'workshop') setEvtZones([...DEFAULT_WORKSHOP_ZONES]);
+    else if (val === 'live') setEvtZones([...DEFAULT_ZONES]);
+  };
 
   const fetchDashboard = async () => {
     if (!currentUser?.id) return;
@@ -254,7 +266,8 @@ export default function AccountPage({
     if (!evtLocation) missing.push('Địa điểm');
     if (evtEventType !== 'online' && !evtPriceRange) missing.push('Khoảng giá');
     if (!evtImage) missing.push('Ảnh');
-    if (missing.length) { await showAlert(`Thiếu: ${missing.join(', ')}`); return; }
+    if (missing.length) { setEvtFormError(`Thiếu thông tin: ${missing.join(', ')}`); return; }
+    setEvtFormError('');
     setSubmittingEvt(true);
     try {
       const isEdit = !!editingEvt;
@@ -795,11 +808,11 @@ export default function AccountPage({
       {/* ── Event form modal ── */}
       {showEvtForm && createPortal(
         <div style={{
-          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 9999,
+          position: 'fixed', inset: 0, background: 'var(--modal-overlay-bg)', zIndex: 9999,
           display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
           padding: '32px 20px', overflowY: 'auto'
         }}>
-          <div className="glass-panel" style={{ width: '100%', maxWidth: '580px', padding: '28px', position: 'relative' }}>
+          <div className="glass-panel" style={{ width: '100%', maxWidth: '580px', padding: '28px', position: 'relative', background: 'var(--form-panel-bg)', border: '1px solid var(--form-panel-border)' }}>
             <button onClick={() => setShowEvtForm(false)} style={{ position: 'absolute', top: '14px', right: '14px', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}>
               <X size={18} />
             </button>
@@ -883,24 +896,24 @@ export default function AccountPage({
                 <label style={labelSt}>Loại sự kiện</label>
                 <div style={{ display: 'flex', gap: '8px' }}>
                   {[
-                    { val: 'live', label: '🎤 Trực tiếp' },
-                    { val: 'online', label: '💻 Trực tuyến' },
-                    { val: 'workshop', label: '🪑 Workshop' }
-                  ].map(opt => (
+                    { val: 'live', Icon: Mic, label: 'Trực tiếp' },
+                    { val: 'online', Icon: Monitor, label: 'Trực tuyến' },
+                    { val: 'workshop', Icon: Users, label: 'Workshop' }
+                  ].map(({ val, Icon, label }) => (
                     <button
-                      key={opt.val}
+                      key={val}
                       type="button"
-                      onClick={() => setEvtEventType(opt.val)}
+                      onClick={() => handleEvtTypeChange(val)}
                       style={{
                         flex: 1, padding: '9px', borderRadius: '8px', cursor: 'pointer',
-                        fontSize: '13px', fontFamily: 'var(--font-body)', fontWeight: evtEventType === opt.val ? 600 : 400,
-                        border: `1px solid ${evtEventType === opt.val ? 'var(--brand-cyan)' : 'rgba(255,255,255,0.1)'}`,
-                        background: evtEventType === opt.val ? 'rgba(0,255,255,0.08)' : 'rgba(255,255,255,0.02)',
-                        color: evtEventType === opt.val ? 'var(--brand-cyan)' : 'var(--text-muted)',
-                        transition: 'all 0.2s'
+                        fontSize: '13px', fontFamily: 'var(--font-body)', fontWeight: evtEventType === val ? 600 : 400,
+                        border: `1px solid ${evtEventType === val ? 'var(--brand-cyan)' : 'rgba(255,255,255,0.12)'}`,
+                        background: evtEventType === val ? 'rgba(0,255,255,0.08)' : 'rgba(255,255,255,0.03)',
+                        color: evtEventType === val ? 'var(--brand-cyan)' : 'var(--text-muted)',
+                        transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px'
                       }}
                     >
-                      {opt.label}
+                      <Icon size={13} strokeWidth={2} />{label}
                     </button>
                   ))}
                 </div>
@@ -946,14 +959,59 @@ export default function AccountPage({
                 </div>
               )}
 
-              {/* Zones */}
-              {evtEventType !== 'online' && <div>
+              {/* Zones — Workshop */}
+              {evtEventType === 'workshop' && <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <label style={{ ...labelSt, margin: 0 }}>Cấu hình bàn workshop</label>
+                  <button
+                    type="button"
+                    style={{ background: 'none', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '4px', padding: '4px 10px', color: 'var(--text-muted)', fontSize: '11px', cursor: 'pointer', fontFamily: 'var(--font-mono)' }}
+                    onClick={() => setEvtZones(prev => [...prev, { name: `Bàn ${prev.length + 1}`, price: prev[0]?.price || 300000, isStanding: false, availableTickets: 6, rows: null, cols: null }])}
+                    disabled={evtZones.length >= 6}
+                  >
+                    + Thêm bàn
+                  </button>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {evtZones.map((zone, i) => (
+                    <div key={i} style={{ padding: '12px', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '8px', background: 'rgba(255,255,255,0.02)' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr auto', gap: '8px', alignItems: 'end' }}>
+                        <div>
+                          <label style={{ ...labelSt, marginBottom: '4px' }}>Tên bàn</label>
+                          <input style={{ ...inputSt, padding: '7px 10px' }} value={zone.name} onChange={e => setEvtZones(prev => prev.map((z, j) => j === i ? { ...z, name: e.target.value } : z))} placeholder="Bàn VIP, Bàn A..." />
+                        </div>
+                        <div>
+                          <label style={{ ...labelSt, marginBottom: '4px' }}>Ghế / bàn (≤14)</label>
+                          <input style={{ ...inputSt, padding: '7px 10px' }} type="number" min="1" max="14" value={zone.availableTickets} onChange={e => setEvtZones(prev => prev.map((z, j) => j === i ? { ...z, availableTickets: Math.min(14, Math.max(1, Number(e.target.value) || 1)) } : z))} />
+                        </div>
+                        <div>
+                          <label style={{ ...labelSt, marginBottom: '4px' }}>Giá / ghế (đ)</label>
+                          <input style={{ ...inputSt, padding: '7px 10px' }} type="number" min="0" value={zone.price} onChange={e => setEvtZones(prev => prev.map((z, j) => j === i ? { ...z, price: Number(e.target.value) } : z))} />
+                        </div>
+                        <button
+                          type="button"
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--brand-rose)', padding: '7px 0', alignSelf: 'flex-end' }}
+                          onClick={() => setEvtZones(prev => prev.filter((_, j) => j !== i))}
+                          disabled={evtZones.length <= 1}
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <p style={{ fontSize: '11px', color: 'var(--text-muted)', margin: '6px 0 0', fontStyle: 'italic' }}>* Mỗi bàn tối đa 14 ghế. Người dùng chọn ghế cụ thể quanh bàn khi đặt vé.</p>
+              </div>}
+
+              {/* Zones — Live */}
+              {evtEventType === 'live' && <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                   <label style={{ ...labelSt, margin: 0 }}>Khu vực / Loại vé</label>
                   <button
                     type="button"
                     style={{ background: 'none', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '4px', padding: '4px 10px', color: 'var(--text-muted)', fontSize: '11px', cursor: 'pointer', fontFamily: 'var(--font-mono)' }}
                     onClick={() => setEvtZones(prev => [...prev, { name: '', price: 0, isStanding: false, availableTickets: 50 }])}
+                    disabled={evtZones.length >= 3}
                   >
                     + Thêm khu
                   </button>
@@ -991,6 +1049,15 @@ export default function AccountPage({
                 </div>
               </div>}
 
+              {evtFormError && (
+                <div style={{
+                  background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.45)',
+                  borderRadius: '8px', padding: '10px 14px', color: '#fca5a5',
+                  fontSize: '12.5px', lineHeight: 1.5
+                }}>
+                  ⚠ {evtFormError}
+                </div>
+              )}
               <div style={{ display: 'flex', gap: '10px', paddingTop: '6px' }}>
                 <button type="submit" style={{ ...btnPrimSt, flex: 2 }} disabled={submittingEvt}>
                   {submittingEvt ? 'Đang xử lý...' : (editingEvt ? 'Cập nhật sự kiện' : 'Gửi Admin duyệt')}

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Search, ShoppingBag, Ticket, ChevronDown, Plus, X, Globe, Calendar, Users, Menu, Sun, Moon, Mail, Lock, User, ImagePlus, Loader, Eye, Pencil, MapPin } from 'lucide-react';
+import { Search, ShoppingBag, Ticket, ChevronDown, Plus, X, Globe, Calendar, Users, Menu, Sun, Moon, Mail, Lock, User, ImagePlus, Loader, Eye, Pencil, MapPin, Mic, Monitor } from 'lucide-react';
 
 const SECTION_LED = {
   events: { color: 'oklch(70% 0.18 300)', glow: 'oklch(70% 0.18 300 / 0.9)' },
@@ -12,6 +12,7 @@ const zoneLabelStyle={fontSize:'10px',fontFamily:'var(--font-mono)',letterSpacin
 const seatLayout=(n=0)=>{const t=Math.max(1,Number(n)||0),c=Math.min(t,10);return{rows:Math.ceil(t/c),cols:c};};
 const normalizeOrganizerZones=(zones=[])=>zones.map((z,i)=>{const b={...z,name:z.name||(i===0?'GA':`Zone ${i+1}`),price:Number(z.price)||0,availableTickets:Number(z.availableTickets)||0,isStanding:!!z.isStanding};if(b.isStanding)return{...b,rows:null,cols:null};const rows=Number(z.rows)||0,cols=Number(z.cols)||0;if(rows>0&&cols>0)return{...b,rows,cols,availableTickets:rows*cols};const l=seatLayout(b.availableTickets||50);return{...b,...l,availableTickets:l.rows*l.cols};});
 const DEFAULT_ORGANIZER_ZONES=normalizeOrganizerZones([{name:'GA',price:500000,isStanding:true,availableTickets:200},{name:'VIP',price:1500000,isStanding:false,availableTickets:50}]);
+const DEFAULT_WORKSHOP_ZONES=[{name:'Bàn 1',price:300000,isStanding:false,availableTickets:6,rows:null,cols:null},{name:'Bàn 2',price:300000,isStanding:false,availableTickets:6,rows:null,cols:null}];
 
 export default function Header({
   theme,
@@ -103,6 +104,7 @@ export default function Header({
   const [evtOnlinePrice, setEvtOnlinePrice] = useState(0);
   const [evtOnlineCapacity, setEvtOnlineCapacity] = useState(100);
   const [isEvtSubmitting, setIsEvtSubmitting] = useState(false);
+  const [evtFormError, setEvtFormError] = useState('');
 
   const resetEventForm = () => {
     setEvtTitle(''); setEvtDescription(''); setEvtCategory('concert');
@@ -112,6 +114,12 @@ export default function Header({
     setEvtEventType('live'); setEvtOnlineLink(''); setEvtPlatform(''); setEvtOnlinePwd('');
     setEvtOnlineInstructions(''); setEvtOnlinePrice(0); setEvtOnlineCapacity(100);
   };
+  const handleEvtTypeChange = (val) => {
+    setEvtEventType(val);
+    if (val === 'workshop') setEvtZones([...DEFAULT_WORKSHOP_ZONES]);
+    else if (val === 'live') setEvtZones(DEFAULT_ORGANIZER_ZONES);
+  };
+
   const [isImgUploading, setIsImgUploading] = useState(false);
   const imgInputRef = useRef(null);
   const timeInputRef = useRef(null);
@@ -242,9 +250,10 @@ export default function Header({
     if (!evtImage) missing.push('Ảnh sự kiện');
 
     if (missing.length > 0) {
-      await showAlert(`Vui lòng điền đầy đủ các thông tin bắt buộc:\n- ${missing.join('\n- ')}`);
+      setEvtFormError(`Thiếu thông tin bắt buộc: ${missing.join(', ')}`);
       return;
     }
+    setEvtFormError('');
     setIsEvtSubmitting(true);
     try {
       const isEdit = modalType === 'edit-event';
@@ -749,7 +758,7 @@ export default function Header({
         <div
           className="modal-overlay-scrollable"
           onClick={e => { if (e.target === e.currentTarget) setModalType(null); }}
-          style={{ position: 'fixed', inset: 0, backgroundColor: 'var(--bg-overlay-medium)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', zIndex: 1500, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          style={{ position: 'fixed', inset: 0, backgroundColor: theme === 'light' ? 'rgba(235,230,255,0.97)' : 'rgba(8,6,18,0.96)', zIndex: 1500, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
 
           <style>{`
             /* CSS cho modal */
@@ -1570,10 +1579,10 @@ export default function Header({
 
             .edm-input-field-new {
               width: 100%;
-              padding: 11px 13px; /* Slightly more spacing inside input */
+              padding: 11px 13px;
               border-radius: 7px;
-              background: rgba(255, 255, 255, 0.015);
-              border: 1px solid rgba(255, 255, 255, 0.05);
+              background: rgba(255, 255, 255, 0.07);
+              border: 1px solid rgba(255, 255, 255, 0.2);
               color: #fff;
               outline: none;
               font-size: 13.5px;
@@ -1583,13 +1592,13 @@ export default function Header({
             }
 
             .edm-input-field-new::placeholder {
-              color: rgba(255, 255, 255, 0.15);
+              color: rgba(255, 255, 255, 0.4);
               font-size: 12px;
             }
 
             .edm-input-field-new:focus {
-              border-color: rgba(167, 139, 250, 0.35);
-              background: rgba(255, 255, 255, 0.025);
+              border-color: rgba(167, 139, 250, 0.55);
+              background: rgba(255, 255, 255, 0.11);
               box-shadow: 
                 0 0 10px rgba(167, 139, 250, 0.05),
                 inset 0 1px 1px rgba(255, 255, 255, 0.02);
@@ -1597,6 +1606,28 @@ export default function Header({
 
             .edm-input-group:focus-within .edm-input-label {
               color: var(--brand-cyan);
+            }
+
+            /* ── Light mode overrides ── */
+            :root[data-theme='light'] .edm-modal-carrier {
+              background: linear-gradient(160deg, rgba(255,255,255,0.99) 0%, rgba(248,244,255,0.99) 100%) !important;
+              border-color: rgba(0,0,0,0.1) !important;
+              box-shadow: 0 30px 70px rgba(0,0,0,0.15), 0 0 50px rgba(139,92,246,0.04) !important;
+            }
+            :root[data-theme='light'] .edm-input-field-new {
+              background: rgba(0,0,0,0.04) !important;
+              border: 1px solid rgba(0,0,0,0.15) !important;
+              color: #1a1a2e !important;
+            }
+            :root[data-theme='light'] .edm-input-field-new::placeholder {
+              color: rgba(0,0,0,0.35) !important;
+            }
+            :root[data-theme='light'] .edm-input-label {
+              color: var(--brand-pearl) !important;
+            }
+            :root[data-theme='light'] .vip-modal-subtitle,
+            :root[data-theme='light'] .edm-modal-glow-title {
+              color: var(--brand-pearl) !important;
             }
 
             /* Elegant watermark AuraPass Crest / Ticket - top right */
@@ -1630,8 +1661,8 @@ export default function Header({
               font-family: var(--font-mono);
               font-size: 12.5px;
               font-weight: 700;
-              color: #0b0914; /* Midnight dark text */
-              background: linear-gradient(135deg, #eae5df 0%, #d5cdbf 100%); /* Champagne Pearl gradient */
+              color: #fff;
+              background: linear-gradient(135deg, #0d9488 0%, #059669 100%);
               border: 1px solid rgba(255, 255, 255, 0.4);
               letter-spacing: 0.14em;
               text-transform: uppercase;
@@ -2282,15 +2313,16 @@ export default function Header({
                 <div className="edm-input-group">
                   <label className="edm-input-label">Loại sự kiện</label>
                   <div style={{ display: 'flex', gap: '8px' }}>
-                    {[{ val: 'live', label: '🎤 Trực tiếp' }, { val: 'online', label: '💻 Trực tuyến' }, { val: 'workshop', label: '🪑 Workshop' }].map(opt => (
-                      <button key={opt.val} type="button" onClick={() => setEvtEventType(opt.val)} style={{
+                    {[{ val: 'live', Icon: Mic, label: 'Trực tiếp' }, { val: 'online', Icon: Monitor, label: 'Trực tuyến' }, { val: 'workshop', Icon: Users, label: 'Workshop' }].map(({ val, Icon, label }) => (
+                      <button key={val} type="button" onClick={() => handleEvtTypeChange(val)} style={{
                         flex: 1, padding: '9px', borderRadius: '8px', cursor: 'pointer', fontSize: '13px',
-                        fontFamily: 'var(--font-body)', fontWeight: evtEventType === opt.val ? 600 : 400,
-                        border: `1px solid ${evtEventType === opt.val ? 'var(--brand-cyan)' : 'rgba(255,255,255,0.1)'}`,
-                        background: evtEventType === opt.val ? 'rgba(0,255,255,0.08)' : 'rgba(255,255,255,0.02)',
-                        color: evtEventType === opt.val ? 'var(--brand-cyan)' : 'var(--text-muted)', transition: 'all 0.2s'
+                        fontFamily: 'var(--font-body)', fontWeight: evtEventType === val ? 600 : 400,
+                        border: `1px solid ${evtEventType === val ? 'var(--brand-cyan)' : 'rgba(255,255,255,0.12)'}`,
+                        background: evtEventType === val ? 'rgba(0,255,255,0.08)' : 'rgba(255,255,255,0.03)',
+                        color: evtEventType === val ? 'var(--brand-cyan)' : 'var(--text-muted)', transition: 'all 0.2s',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px'
                       }}>
-                        {opt.label}
+                        <Icon size={13} strokeWidth={2} />{label}
                       </button>
                     ))}
                   </div>
@@ -2398,64 +2430,66 @@ export default function Header({
                   )}
                 </div>
 
-                {evtEventType !== 'online' && <div className="evt-zones-section">
+                {evtEventType === 'workshop' && <div className="evt-zones-section">
+                  <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'10px'}}>
+                    <span className="evt-zones-title">CẤU HÌNH BÀN WORKSHOP</span>
+                    <button
+                      type="button"
+                      disabled={evtZones.length >= 6}
+                      onClick={() => setEvtZones([...evtZones, { name: `Bàn ${evtZones.length + 1}`, price: evtZones[0]?.price || 300000, isStanding: false, availableTickets: 6, rows: null, cols: null }])}
+                      style={{ padding: '6px 12px', fontSize: '11px', fontFamily: 'var(--font-mono)', fontWeight: '700', color: '#fff', background: 'linear-gradient(135deg, #a78bfa, #8b5cf6)', border: 'none', borderRadius: '8px', cursor: evtZones.length >= 6 ? 'not-allowed' : 'pointer', opacity: evtZones.length >= 6 ? 0.5 : 1 }}
+                    >+ THÊM BÀN</button>
+                  </div>
+                  {evtZones.map((zone, idx) => (
+                    <div key={idx} style={{display:'flex',flexDirection:'column',gap:'8px',padding:'12px',border:'1px solid rgba(255,255,255,0.06)',borderRadius:'10px',background:'rgba(255,255,255,0.02)',position:'relative'}}>
+                      {evtZones.length > 1 && (
+                        <button type="button" onClick={() => setEvtZones(evtZones.filter((_, i) => i !== idx))} style={{ position:'absolute', top:'6px', right:'8px', width:'22px', height:'22px', borderRadius:'6px', background:'rgba(239,68,68,0.1)', border:'1px solid rgba(239,68,68,0.2)', color:'#f87171', fontSize:'12px', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>×</button>
+                      )}
+                      <div style={{display:'grid',gridTemplateColumns:'1.4fr 1fr 1fr',gap:'8px'}}>
+                        <div style={{display:'flex',flexDirection:'column',gap:'4px'}}>
+                          <span style={zoneLabelStyle}>Tên Bàn</span>
+                          <input type="text" value={zone.name} onChange={(e)=>setEvtZones(evtZones.map((z,i)=>i===idx?{...z,name:e.target.value}:z))} className="edm-input-field-new evt-zone-input" placeholder="Bàn VIP, Bàn A..." />
+                        </div>
+                        <div style={{display:'flex',flexDirection:'column',gap:'4px'}}>
+                          <span style={zoneLabelStyle}>Ghế / Bàn (tối đa 14)</span>
+                          <input type="number" min="1" max="14" value={zone.availableTickets} onChange={(e)=>setEvtZones(evtZones.map((z,i)=>i===idx?{...z,availableTickets:Math.min(14,Math.max(1,Number(e.target.value)||1))}:z))} className="edm-input-field-new evt-zone-input" placeholder="6" />
+                        </div>
+                        <div style={{display:'flex',flexDirection:'column',gap:'4px'}}>
+                          <span style={zoneLabelStyle}>Giá / Ghế (VND)</span>
+                          <input type="number" value={zone.price} onChange={(e)=>setEvtZones(evtZones.map((z,i)=>i===idx?{...z,price:Number(e.target.value)||0}:z))} className="edm-input-field-new evt-zone-input" placeholder="300000" />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: 1.5, marginTop:'6px' }}>* Mỗi bàn tối đa 14 ghế. Người dùng chọn ghế cụ thể quanh bàn khi đặt vé. Tối đa 6 bàn.</span>
+                </div>}
+
+                {evtEventType === 'live' && <div className="evt-zones-section">
                   <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'10px'}}>
                     <span className="evt-zones-title">CẤU HÌNH PHÂN KHU VÉ</span>
                     <button
                       type="button"
                       disabled={evtZones.length >= 3}
                       onClick={() => setEvtZones([...evtZones, normalizeOrganizerZones([{ name: 'Zone Mới', price: 100000, isStanding: false, availableTickets: 30 }])[0]])}
-                      style={{
-                        padding: '6px 12px',
-                        fontSize: '11px',
-                        fontFamily: 'var(--font-mono)',
-                        fontWeight: '700',
-                        color: '#fff',
-                        background: 'linear-gradient(135deg, #a78bfa, #8b5cf6)',
-                        border: 'none',
-                        borderRadius: '8px',
-                        cursor: evtZones.length >= 3 ? 'not-allowed' : 'pointer',
-                        opacity: evtZones.length >= 3 ? 0.5 : 1
-                      }}
-                    >
-                      + THÊM PHÂN KHU
-                    </button>
+                      style={{ padding: '6px 12px', fontSize: '11px', fontFamily: 'var(--font-mono)', fontWeight: '700', color: '#fff', background: 'linear-gradient(135deg, #a78bfa, #8b5cf6)', border: 'none', borderRadius: '8px', cursor: evtZones.length >= 3 ? 'not-allowed' : 'pointer', opacity: evtZones.length >= 3 ? 0.5 : 1 }}
+                    >+ THÊM PHÂN KHU</button>
                   </div>
                   {evtZones.map((zone, idx) => (
                     <div key={idx} style={{display:'flex',flexDirection:'column',gap:'8px',padding:'12px',border:'1px solid rgba(255,255,255,0.06)',borderRadius:'10px',background:'rgba(255,255,255,0.02)', position:'relative'}}>
                       {evtZones.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => setEvtZones(evtZones.filter((_, i) => i !== idx))}
-                          style={{
-                            position:'absolute',
-                            top:'6px',
-                            right:'8px',
-                            width:'22px',
-                            height:'22px',
-                            borderRadius:'6px',
-                            background:'rgba(239,68,68,0.1)',
-                            border:'1px solid rgba(239,68,68,0.2)',
-                            color:'#f87171',
-                            fontSize:'12px',
-                            cursor:'pointer',
-                            display:'flex',
-                            alignItems:'center',
-                            justifyContent:'center'
-                          }}
-                        >×</button>
+                        <button type="button" onClick={() => setEvtZones(evtZones.filter((_, i) => i !== idx))} style={{ position:'absolute', top:'6px', right:'8px', width:'22px', height:'22px', borderRadius:'6px', background:'rgba(239,68,68,0.1)', border:'1px solid rgba(239,68,68,0.2)', color:'#f87171', fontSize:'12px', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>×</button>
                       )}
                       <div style={{display:'grid',gridTemplateColumns:'1.2fr 1fr 1fr',gap:'8px'}}>
                         <div style={{display:'flex',flexDirection:'column',gap:'4px'}}>
-                          <span style={{ fontSize: '10px', fontFamily: 'var(--font-mono)', letterSpacing: '0.08em', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Tên Phân Khu</span>
+                          <span style={zoneLabelStyle}>Tên Phân Khu</span>
                           <input type="text" value={zone.name} onChange={(e)=>setEvtZones(evtZones.map((z,i)=>i===idx?{...z,name:e.target.value}:z))} className="edm-input-field-new evt-zone-input" placeholder="VIP, GA..." />
                         </div>
                         <div style={{display:'flex',flexDirection:'column',gap:'4px'}}>
-                          <span style={{ fontSize: '10px', fontFamily: 'var(--font-mono)', letterSpacing: '0.08em', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Giá Vé (VND)</span>
+                          <span style={zoneLabelStyle}>Giá Vé (VND)</span>
                           <input type="number" value={zone.price} onChange={(e)=>setEvtZones(evtZones.map((z,i)=>i===idx?{...z,price:Number(e.target.value)||0}:z))} className="edm-input-field-new evt-zone-input" placeholder="500000" />
                         </div>
                         <div style={{display:'flex',flexDirection:'column',gap:'4px'}}>
-                          <span style={{ fontSize: '10px', fontFamily: 'var(--font-mono)', letterSpacing: '0.08em', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Loại Khu</span>
+                          <span style={zoneLabelStyle}>Loại Khu</span>
                           <select value={zone.isStanding?'standing':'seated'} onChange={(e)=>setEvtZones(normalizeOrganizerZones(evtZones.map((z,i)=>i===idx?{...z,isStanding:e.target.value==='standing'}:z)))} className="edm-input-field-new evt-zone-input">
                             <option value="seated">Ghế ngồi</option>
                             <option value="standing">Vé đứng GA</option>
@@ -2464,21 +2498,21 @@ export default function Header({
                       </div>
                       {zone.isStanding ? (
                         <div style={{display:'flex',flexDirection:'column',gap:'4px'}}>
-                          <span style={{ fontSize: '10px', fontFamily: 'var(--font-mono)', letterSpacing: '0.08em', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Số Vé Đăng Ký</span>
+                          <span style={zoneLabelStyle}>Số Vé Đăng Ký</span>
                           <input type="number" value={zone.availableTickets} onChange={(e)=>setEvtZones(evtZones.map((z,i)=>i===idx?{...z,availableTickets:Number(e.target.value)||0}:z))} className="edm-input-field-new evt-zone-input" placeholder="200" />
                         </div>
                       ) : (
                         <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:'8px'}}>
                           <div style={{display:'flex',flexDirection:'column',gap:'4px'}}>
-                            <span style={{ fontSize: '10px', fontFamily: 'var(--font-mono)', letterSpacing: '0.08em', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Số Hàng Ghế</span>
+                            <span style={zoneLabelStyle}>Số Hàng Ghế</span>
                             <input type="number" value={zone.rows||''} onChange={(e)=>setEvtZones(normalizeOrganizerZones(evtZones.map((z,i)=>i===idx?{...z,rows:Number(e.target.value)||0}:z)))} className="edm-input-field-new evt-zone-input" placeholder="3" />
                           </div>
                           <div style={{display:'flex',flexDirection:'column',gap:'4px'}}>
-                            <span style={{ fontSize: '10px', fontFamily: 'var(--font-mono)', letterSpacing: '0.08em', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Ghế Mỗi Hàng</span>
+                            <span style={zoneLabelStyle}>Ghế Mỗi Hàng</span>
                             <input type="number" value={zone.cols||''} onChange={(e)=>setEvtZones(normalizeOrganizerZones(evtZones.map((z,i)=>i===idx?{...z,cols:Number(e.target.value)||0}:z)))} className="edm-input-field-new evt-zone-input" placeholder="5" />
                           </div>
                           <div style={{display:'flex',flexDirection:'column',gap:'4px'}}>
-                            <span style={{ fontSize: '10px', fontFamily: 'var(--font-mono)', letterSpacing: '0.08em', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Tổng Số Ghế</span>
+                            <span style={zoneLabelStyle}>Tổng Số Ghế</span>
                             <input type="number" value={zone.availableTickets||0} readOnly className="edm-input-field-new evt-zone-input" />
                           </div>
                         </div>
@@ -2488,6 +2522,15 @@ export default function Header({
                   <span style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: 1.5, marginTop:'6px' }}>* Khu đứng chỉ nhập tổng số vé. Khu ghế ngồi tự tính tổng ghế bằng Số hàng × Ghế mỗi hàng. Giới hạn tối đa 3 phân khu.</span>
                 </div>}
 
+                {evtFormError && (
+                  <div style={{
+                    background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.45)',
+                    borderRadius: '8px', padding: '10px 14px', color: '#fca5a5',
+                    fontSize: '12.5px', lineHeight: 1.5, marginTop: '4px'
+                  }}>
+                    ⚠ {evtFormError}
+                  </div>
+                )}
                 <button type="submit" disabled={isEvtSubmitting} className="edm-btn-action" style={{ marginTop: '6px' }}>
                   {isEvtSubmitting ? 'ĐANG GỬI YÊU CẦU...' : 'GỬI YÊU CẦU DUYỆT SỰ KIỆN'}
                 </button>

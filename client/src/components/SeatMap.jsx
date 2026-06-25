@@ -17,6 +17,7 @@ const normalizeSeatZones = (zones = []) => zones.map((zone) => {
 });
 
 export default function SeatMap({ event, onBack, onProceedCheckout, showAlert }) {
+  console.log('[SeatMap] eventType:', event?.eventType, '| id:', event?.id, '| title:', event?.title);
   const normalizedZones = normalizeSeatZones(event.zones || []);
   const [selectedZone, setSelectedZone] = useState(normalizedZones[0]);
   const [selectedSeats, setSelectedSeats] = useState([]);
