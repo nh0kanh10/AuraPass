@@ -351,8 +351,18 @@ function App() {
   };
 
   const handleBuyResale = (ticket) => {
-    setSelectedResaleTicket(ticket);
     const event = events.find(e => e.id === ticket.eventId);
+    if (event?.eventType === 'online') {
+      const hasOwned = userTickets?.some(
+        t => t.eventId === event.id && (t.status === 'active' || t.status === 'reselling')
+      );
+      if (hasOwned) {
+        showAlert('Bạn đã sở hữu vé cho sự kiện trực tuyến này. Mỗi tài khoản chỉ được sở hữu tối đa 1 vé.');
+        return;
+      }
+    }
+
+    setSelectedResaleTicket(ticket);
     setBookingDetails({
       event,
       zone: { id: ticket.ticketId, name: ticket.zoneName, price: ticket.resalePrice, isStanding: false },
@@ -702,6 +712,7 @@ function App() {
                   onBack={() => setCurrentView('home')} 
                   onProceedCheckout={handleProceedCheckout}
                   showAlert={showAlert}
+                  userTickets={userTickets}
                 />
               </div>
             )}

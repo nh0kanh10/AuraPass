@@ -90,8 +90,12 @@ const formatDate = (dateStr) => {
   return dateStr;
 };
 
-export default function SeatMap({ event, onBack, onProceedCheckout, showAlert }) {
+export default function SeatMap({ event, onBack, onProceedCheckout, showAlert, userTickets }) {
   console.log('[SeatMap] eventType:', event?.eventType, '| id:', event?.id, '| title:', event?.title);
+  const hasOwnedOnlineTicket = event.eventType === 'online' && userTickets?.some(
+    t => t.eventId === event.id && (t.status === 'active' || t.status === 'reselling')
+  );
+
   const normalizedZones = normalizeSeatZones(event.zones || []);
   const [selectedZone, setSelectedZone] = useState(normalizedZones[0]);
   const [selectedSeats, setSelectedSeats] = useState([]);
@@ -176,8 +180,9 @@ export default function SeatMap({ event, onBack, onProceedCheckout, showAlert })
 
 
   const handleStandingIncrement = () => {
-    if (standingCount >= 6) {
-      showAlert("Bạn chỉ được đặt tối đa 6 vé trong một lượt giao dịch.");
+    const maxCount = event.eventType === 'online' ? 1 : 6;
+    if (standingCount >= maxCount) {
+      showAlert(`Bạn chỉ được đặt tối đa ${maxCount} vé trong một lượt giao dịch.`);
       return;
     }
     if (standingCount < selectedZone.availableTickets) {
@@ -335,6 +340,22 @@ export default function SeatMap({ event, onBack, onProceedCheckout, showAlert })
             }}>
               ✗ ĐÃ HẾT VÉ
             </div>
+          ) : hasOwnedOnlineTicket ? (
+            <div style={{
+              padding: '12px 16px',
+              borderRadius: '8px',
+              border: '1.5px solid var(--brand-rose)',
+              background: 'rgba(244,63,94,0.06)',
+              color: 'var(--brand-rose)',
+              fontSize: '13px',
+              fontWeight: 600,
+              fontFamily: 'var(--font-mono)',
+              textAlign: 'center',
+              marginBottom: '20px',
+              lineHeight: 1.5
+            }}>
+              💡 BẠN ĐÃ SỞ HỮU VÉ SỰ KIỆN NÀY. MỖI NGƯỜI CHỈ ĐƯỢC MUA TỐI ĐA 1 VÉ.
+            </div>
           ) : (
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '20px' }}>
               <button
@@ -345,10 +366,10 @@ export default function SeatMap({ event, onBack, onProceedCheckout, showAlert })
               <span style={{ fontSize: '24px', fontWeight: 700, fontFamily: 'var(--font-mono)', color: 'var(--text-primary)', minWidth: '32px', textAlign: 'center' }}>{onlineCount}</span>
               <button
                 onClick={handleStandingIncrement}
-                disabled={onlineCount >= 6 || onlineCount >= (selectedZone?.availableTickets || 0)}
+                disabled={onlineCount >= 1 || onlineCount >= (selectedZone?.availableTickets || 0)}
                 style={{ width: '36px', height: '36px', borderRadius: '8px', border: '1px solid var(--brand-cyan)', background: 'rgba(0,255,255,0.08)', color: 'var(--brand-cyan)', fontSize: '18px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }}
               >+</button>
-              <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>vé (tối đa 6)</span>
+              <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>vé (tối đa 1)</span>
             </div>
           )}
 
@@ -359,7 +380,7 @@ export default function SeatMap({ event, onBack, onProceedCheckout, showAlert })
           </div>
 
           {/* Summary row */}
-          {onlineCount > 0 && (
+          {!hasOwnedOnlineTicket && onlineCount > 0 && (
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
               <span style={{ fontSize: '14px', color: 'var(--text-muted)' }}>{onlineCount} × {selectedZone?.name}</span>
               <span style={{ fontSize: '18px', fontWeight: 700, color: 'var(--brand-cyan)', fontFamily: 'var(--font-mono)' }}>{formatPrice(onlineTotal)}</span>
@@ -368,19 +389,20 @@ export default function SeatMap({ event, onBack, onProceedCheckout, showAlert })
 
           <button
             onClick={() => {
+              if (hasOwnedOnlineTicket) return;
               if (onlineCount === 0) { showAlert('Vui lòng chọn ít nhất 1 vé'); return; }
               onProceedCheckout({ event, zone: selectedZone, count: onlineCount, seats: [], totalPrice: onlineTotal });
             }}
-            disabled={onlineCount === 0}
+            disabled={onlineCount === 0 || hasOwnedOnlineTicket}
             style={{
               width: '100%', padding: '14px', borderRadius: '10px', border: 'none',
-              background: onlineCount > 0 ? 'linear-gradient(135deg, var(--brand-cyan), var(--brand-emerald))' : 'rgba(255,255,255,0.08)',
-              color: onlineCount > 0 ? '#000' : 'var(--text-muted)',
+              background: (onlineCount > 0 && !hasOwnedOnlineTicket) ? 'linear-gradient(135deg, var(--brand-cyan), var(--brand-emerald))' : 'rgba(255,255,255,0.08)',
+              color: (onlineCount > 0 && !hasOwnedOnlineTicket) ? '#000' : 'var(--text-muted)',
               fontSize: '14px', fontWeight: 700, fontFamily: 'var(--font-mono)', letterSpacing: '0.06em',
-              cursor: onlineCount > 0 ? 'pointer' : 'default', transition: 'all 0.2s'
+              cursor: (onlineCount > 0 && !hasOwnedOnlineTicket) ? 'pointer' : 'default', transition: 'all 0.2s'
             }}
           >
-            TIẾN HÀNH THANH TOÁN →
+            {hasOwnedOnlineTicket ? 'ĐÃ SỞ HỮU VÉ' : 'TIẾN HÀNH THANH TOÁN →'}
           </button>
         </div>
       </div>

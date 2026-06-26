@@ -96,6 +96,22 @@ export const buyResaleTicket = async (req, res) => {
       throw new Error('Sự kiện đã ngưng giao dịch vé bán lại');
     }
 
+    if (event && event.eventType === 'online') {
+      if (buyerId) {
+        const existingTicket = await Ticket.findOne({
+          where: {
+            userId: buyerId,
+            eventId: event.id,
+            status: ['active', 'reselling']
+          },
+          transaction: t
+        });
+        if (existingTicket) {
+          throw new Error('Bạn đã sở hữu vé của sự kiện trực tuyến này. Mỗi tài khoản chỉ được sở hữu tối đa 1 vé.');
+        }
+      }
+    }
+
     const bookingId = `booking-${Date.now()}`;
     const repTicketId = `AP-${Math.floor(100000 + Math.random() * 900000)}`;
 

@@ -20,6 +20,25 @@ export const createBooking = async (req, res) => {
       throw new Error('Sự kiện đã ngưng bán vé sơ cấp');
     }
 
+    if (event.eventType === 'online') {
+      if (count > 1) {
+        throw new Error('Mỗi tài khoản chỉ được mua tối đa 1 vé cho sự kiện trực tuyến.');
+      }
+      if (userId) {
+        const existingTicket = await Ticket.findOne({
+          where: {
+            userId,
+            eventId,
+            status: ['active', 'reselling']
+          },
+          transaction: t
+        });
+        if (existingTicket) {
+          throw new Error('Bạn đã sở hữu vé của sự kiện trực tuyến này. Mỗi tài khoản chỉ được sở hữu tối đa 1 vé.');
+        }
+      }
+    }
+
     // Availability check — multi-zone (workshop) or single-zone
     if (perSeatZoneIds && perSeatZoneIds.length > 0) {
       const zoneCounts = {};
