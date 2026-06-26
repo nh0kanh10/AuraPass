@@ -90,6 +90,7 @@ export default function Header({
   const [evtCategory, setEvtCategory] = useState('concert');
   const [evtDate, setEvtDate] = useState('');
   const [evtTime, setEvtTime] = useState('19:30');
+  const [evtEndTime, setEvtEndTime] = useState('22:30');
   const [evtLocation, setEvtLocation] = useState('');
   const [evtPriceRange, setEvtPriceRange] = useState('');
   const [evtImage, setEvtImage] = useState('');
@@ -108,7 +109,7 @@ export default function Header({
 
   const resetEventForm = () => {
     setEvtTitle(''); setEvtDescription(''); setEvtCategory('concert');
-    setEvtDate(''); setEvtTime('19:30'); setEvtLocation(''); setEvtPriceRange('');
+    setEvtDate(''); setEvtTime('19:30'); setEvtEndTime('22:30'); setEvtLocation(''); setEvtPriceRange('');
     setEvtImage(''); setEvtBadge(''); setEvtTheme('cyberpunk');
     setEvtZones(DEFAULT_ORGANIZER_ZONES);
     setEvtEventType('live'); setEvtOnlineLink(''); setEvtPlatform(''); setEvtOnlinePwd('');
@@ -123,6 +124,8 @@ export default function Header({
   const [isImgUploading, setIsImgUploading] = useState(false);
   const imgInputRef = useRef(null);
   const timeInputRef = useRef(null);
+  const endTimeInputRef = useRef(null);
+  const [showEndTimePicker, setShowEndTimePicker] = useState(false);
   const [timePickerPosition, setTimePickerPosition] = useState({ top: 0, left: 0 });
   const [myEvents, setMyEvents] = useState([]);
   const [loadingMyEvents, setLoadingMyEvents] = useState(false);
@@ -161,6 +164,7 @@ export default function Header({
     setEvtCategory(event.category || 'concert');
     setEvtDate(event.date || '');
     setEvtTime(event.time || '19:30');
+    setEvtEndTime(event.endTime || '22:30');
     setEvtLocation(event.location || '');
     setEvtPriceRange(event.priceRange || '');
     setEvtImage(event.image || '');
@@ -271,6 +275,7 @@ export default function Header({
           category: evtCategory,
           date: evtDate,
           time: evtTime,
+          endTime: evtEndTime,
           location: evtLocation,
           priceRange: evtEventType === 'online'
             ? `${Number(evtOnlinePrice).toLocaleString('vi-VN')}đ`
@@ -311,6 +316,7 @@ export default function Header({
       setEvtCategory('concert');
       setEvtDate('');
       setEvtTime('19:30');
+      setEvtEndTime('22:30');
       setEvtLocation('');
       setEvtPriceRange('');
       setEvtImage('');
@@ -2152,7 +2158,7 @@ export default function Header({
                 </div>
 
                 <div style={{ display: 'flex', gap: '10px' }}>
-                  <div className="edm-input-group" style={{ flex: 1 }}>
+                  <div className="edm-input-group" style={{ flex: 1.5 }}>
                     <label className="edm-input-label">Ngày diễn ra *</label>
                     <input
                       type="date"
@@ -2249,6 +2255,116 @@ export default function Header({
                                   key={m}
                                   type="button"
                                   onClick={() => setEvtTime(`${currentH || '19'}:${m}`)}
+                                  style={{
+                                    background: isSelected ? 'rgba(139, 92, 246, 0.35)' : 'transparent',
+                                    border: isSelected ? '1px solid rgba(139, 92, 246, 0.6)' : 'none',
+                                    borderRadius: '6px',
+                                    padding: '6px 0',
+                                    color: isSelected ? '#fff' : 'rgba(255,255,255,0.65)',
+                                    fontFamily: 'var(--font-mono)',
+                                    fontSize: '12.5px',
+                                    fontWeight: isSelected ? 700 : 400,
+                                    cursor: 'pointer',
+                                    transition: 'all 0.15s ease'
+                                  }}
+                                  className="time-picker-item"
+                                >
+                                  {m}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </>, document.body
+                    )}
+                  </div>
+                  <div className="edm-input-group" style={{ flex: 1, position: 'relative' }} ref={endTimeInputRef}>
+                    <label className="edm-input-label">Giờ kết thúc</label>
+                    <div
+                      onClick={() => setShowEndTimePicker(!showEndTimePicker)}
+                      className="edm-input-field-new"
+                      style={{
+                        height: '38px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        cursor: 'pointer',
+                        padding: '0 13px',
+                        userSelect: 'none',
+                        fontFamily: 'var(--font-mono)',
+                        fontSize: '13.5px',
+                        borderColor: showEndTimePicker ? 'rgba(167, 139, 250, 0.5)' : ''
+                      }}
+                    >
+                      <span>{evtEndTime || '22:30'}</span>
+                      <span style={{ fontSize: '10px', opacity: 0.5 }}>▼</span>
+                    </div>
+
+                    {showEndTimePicker && createPortal(
+                      <>
+                        <div
+                          onClick={() => setShowEndTimePicker(false)}
+                          style={{ position: 'fixed', inset: 0, zIndex: 9998 }}
+                        />
+                        <div
+                          className="custom-time-picker-panel"
+                          style={{
+                            position: 'fixed',
+                            top: endTimeInputRef.current ? endTimeInputRef.current.getBoundingClientRect().bottom + 6 : 200,
+                            left: endTimeInputRef.current ? endTimeInputRef.current.getBoundingClientRect().left : 100,
+                            width: '180px',
+                            height: '180px',
+                            background: 'linear-gradient(160deg, rgba(38, 30, 64, 0.98) 0%, rgba(22, 16, 42, 0.99) 100%)',
+                            border: '1px solid rgba(255, 255, 255, 0.16)',
+                            borderRadius: '12px',
+                            boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
+                            display: 'flex',
+                            zIndex: 9999,
+                            overflow: 'hidden',
+                            padding: '8px',
+                            boxSizing: 'border-box'
+                          }}
+                        >
+                          <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '2px', paddingRight: '4px', borderRight: '1px solid rgba(255,255,255,0.08)' }} className="time-picker-column">
+                            <div style={{ fontSize: '9px', fontFamily: 'var(--font-mono)', textAlign: 'center', color: '#fbbf24', paddingBottom: '4px', borderBottom: '1px dashed rgba(255,255,255,0.1)', marginBottom: '4px', position: 'sticky', top: 0, background: 'rgba(38, 30, 64, 0.98)' }}>GIỜ</div>
+                            {Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0')).map(h => {
+                              const [currentH, currentM] = (evtEndTime || '22:30').split(':');
+                              const isSelected = currentH === h;
+                              return (
+                                <button
+                                  key={h}
+                                  type="button"
+                                  onClick={() => setEvtEndTime(`${h}:${currentM || '30'}`)}
+                                  style={{
+                                    background: isSelected ? 'rgba(139, 92, 246, 0.35)' : 'transparent',
+                                    border: isSelected ? '1px solid rgba(139, 92, 246, 0.6)' : 'none',
+                                    borderRadius: '6px',
+                                    padding: '6px 0',
+                                    color: isSelected ? '#fff' : 'rgba(255,255,255,0.65)',
+                                    fontFamily: 'var(--font-mono)',
+                                    fontSize: '12.5px',
+                                    fontWeight: isSelected ? 700 : 400,
+                                    cursor: 'pointer',
+                                    transition: 'all 0.15s ease'
+                                  }}
+                                  className="time-picker-item"
+                                >
+                                  {h}
+                                </button>
+                              );
+                            })}
+                          </div>
+
+                          <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '2px', paddingLeft: '4px' }} className="time-picker-column">
+                            <div style={{ fontSize: '9px', fontFamily: 'var(--font-mono)', textAlign: 'center', color: '#fbbf24', paddingBottom: '4px', borderBottom: '1px dashed rgba(255,255,255,0.1)', marginBottom: '4px', position: 'sticky', top: 0, background: 'rgba(38, 30, 64, 0.98)' }}>PHÚT</div>
+                            {Array.from({ length: 12 }, (_, i) => String(i * 5).padStart(2, '0')).map(m => {
+                              const [currentH, currentM] = (evtEndTime || '22:30').split(':');
+                              const isSelected = currentM === m;
+                              return (
+                                <button
+                                  key={m}
+                                  type="button"
+                                  onClick={() => setEvtEndTime(`${currentH || '22'}:${m}`)}
                                   style={{
                                     background: isSelected ? 'rgba(139, 92, 246, 0.35)' : 'transparent',
                                     border: isSelected ? '1px solid rgba(139, 92, 246, 0.6)' : 'none',
@@ -2810,6 +2926,7 @@ export default function Header({
                             gap: '14px',
                             position: 'relative',
                             overflow: 'hidden',
+                            flexShrink: 0,
                             transition: 'all 0.3s ease'
                           }}
                         >

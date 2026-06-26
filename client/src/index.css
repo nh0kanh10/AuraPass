@@ -112,6 +112,8 @@
 
   --brand-cyan: oklch(48% 0.15 220);
   --brand-violet: oklch(42% 0.15 260);
+  --brand-gold: oklch(50% 0.12 85);
+  --brand-gold-glow: oklch(50% 0.12 85 / 0.15);
 
   --bg-overlay-heavy: rgba(255, 255, 255, 0.94);
   --bg-overlay-medium: rgba(255, 255, 255, 0.75);

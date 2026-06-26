@@ -147,8 +147,9 @@ export default function AccountPage({
       });
       const data = await res.json();
       if (!res.ok) { await showAlert(data.error || 'Đăng bán thất bại'); return; }
+      setResalePending(null); 
+      setResalePrice('');
       await showAlert(`Đăng bán thành công với giá ${fmt(priceNum)}!`);
-      setResalePending(null); setResalePrice('');
       if (fetchUserTickets) await fetchUserTickets(currentUser.id);
       if (fetchResaleTickets) await fetchResaleTickets();
     } catch { await showAlert('Lỗi kết nối'); }
@@ -186,6 +187,7 @@ export default function AccountPage({
   const [evtCategory, setEvtCategory] = useState('concert');
   const [evtDate, setEvtDate] = useState('');
   const [evtTime, setEvtTime] = useState('19:30');
+  const [evtEndTime, setEvtEndTime] = useState('22:30');
   const [evtLocation, setEvtLocation] = useState('');
   const [evtPriceRange, setEvtPriceRange] = useState('');
   const [evtImage, setEvtImage] = useState('');
@@ -251,7 +253,7 @@ export default function AccountPage({
   const openCreateEvt = () => {
     setEditingEvt(null);
     setEvtTitle(''); setEvtDesc(''); setEvtCategory('concert');
-    setEvtDate(''); setEvtTime('19:30'); setEvtLocation('');
+    setEvtDate(''); setEvtTime('19:30'); setEvtEndTime('22:30'); setEvtLocation('');
     setEvtPriceRange(''); setEvtImage(''); setEvtBadge('');
     setEvtTheme('cyberpunk'); setEvtZones(DEFAULT_ZONES);
     setEvtEventType('live'); setEvtOnlineLink(''); setEvtPlatform(''); setEvtOnlinePwd('');
@@ -266,6 +268,7 @@ export default function AccountPage({
     setEvtCategory(event.category || 'concert');
     setEvtDate(event.date || '');
     setEvtTime(event.time || '19:30');
+    setEvtEndTime(event.endTime || '22:30');
     setEvtLocation(event.location || '');
     setEvtPriceRange(event.priceRange || '');
     setEvtImage(event.image || '');
@@ -304,7 +307,7 @@ export default function AccountPage({
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             title: evtTitle, description: evtDesc, category: evtCategory,
-            date: evtDate, time: evtTime, location: evtLocation,
+            date: evtDate, time: evtTime, endTime: evtEndTime, location: evtLocation,
             priceRange: evtEventType === 'online' ? `${Number(evtOnlinePrice).toLocaleString('vi-VN')}đ` : evtPriceRange,
             image: evtImage, badge: evtBadge, theme: evtTheme,
             zones: evtEventType === 'online'
@@ -322,8 +325,8 @@ export default function AccountPage({
       );
       const data = await res.json();
       if (!res.ok) { await showAlert(data.error || 'Thất bại'); return; }
-      await showAlert(isEdit ? 'Cập nhật thành công!' : 'Tạo sự kiện thành công! Đang chờ admin duyệt.');
       setShowEvtForm(false);
+      await showAlert(isEdit ? 'Cập nhật thành công!' : 'Tạo sự kiện thành công! Đang chờ admin duyệt.');
       fetchDashboard();
     } catch { await showAlert('Lỗi kết nối'); }
     finally { setSubmittingEvt(false); }
@@ -617,6 +620,8 @@ export default function AccountPage({
                           {[
                             ['Mã vé', ticket.id],
                             ['Sự kiện', ticket.eventTitle],
+                            ['Thời gian', `${ticket.eventTime || ''}${ticket.eventEndTime ? ` - ${ticket.eventEndTime}` : ''}${ticket.eventDate ? `, ${ticket.eventDate}` : ''}`],
+                            ['Địa điểm', ticket.eventLocation || ''],
                             ['Khu vực', ticket.zoneName],
                             ticket.eventType === 'online'
                               ? ['Loại vé', 'Vé tham dự trực tuyến']
@@ -690,17 +695,6 @@ export default function AccountPage({
                           </div>
                         ) : (
                           <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
-                            <button
-                              style={{
-                                flex: 1, padding: '8px', borderRadius: '6px',
-                                border: '1px solid var(--brand-cyan)', background: 'transparent',
-                                color: 'var(--brand-cyan)', fontSize: '12px', fontFamily: 'var(--font-mono)',
-                                cursor: 'pointer', letterSpacing: '0.05em', transition: 'background 0.2s'
-                              }}
-                              onClick={() => setActiveQrTicket(ticket)}
-                            >
-                              XEM MÃ QR
-                            </button>
                             {!isReselling ? (
                               <button
                                 style={{
@@ -717,7 +711,7 @@ export default function AccountPage({
                               <button
                                 style={{
                                   flex: 1, padding: '8px', borderRadius: '6px',
-                                  border: '1px solid rgba(255,255,255,0.15)', background: 'transparent',
+                                  border: '1px solid var(--form-input-border)', background: 'transparent',
                                   color: 'var(--text-muted)', fontSize: '12px', fontFamily: 'var(--font-mono)', cursor: 'pointer'
                                 }}
                                 onClick={() => handleCancelResale(ticket)}
@@ -785,7 +779,7 @@ export default function AccountPage({
                 onClick={(e) => { if (e.target === e.currentTarget) setActiveQrTicket(null); }}
                 style={{
                   position: 'fixed', inset: 0,
-                  backgroundColor: 'rgba(5, 4, 10, 0.92)',
+                  backgroundColor: 'var(--modal-overlay-bg)',
                   backdropFilter: 'blur(24px)',
                   WebkitBackdropFilter: 'blur(24px)',
                   zIndex: 9999,
@@ -795,11 +789,11 @@ export default function AccountPage({
                 <div className="resale-price-modal-card" style={{
                   width: '92%',
                   maxWidth: '420px',
-                  background: 'linear-gradient(160deg, rgba(38, 30, 64, 0.98) 0%, rgba(22, 16, 42, 0.99) 100%)',
-                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                  background: 'var(--form-panel-bg)',
+                  border: '1px solid var(--form-panel-border)',
                   borderRadius: '24px',
                   padding: '36px 32px 32px 32px',
-                  boxShadow: '0 30px 80px rgba(0,0,0,0.95)',
+                  boxShadow: 'var(--glass-shadow)',
                   position: 'relative',
                   textAlign: 'center',
                   display: 'flex',
@@ -811,8 +805,8 @@ export default function AccountPage({
                     onClick={() => setActiveQrTicket(null)}
                     style={{
                       position: 'absolute', top: '18px', right: '18px',
-                      background: 'rgba(255,255,255,0.04)',
-                      border: '1px solid rgba(255,255,255,0.08)',
+                      background: 'var(--form-input-bg)',
+                      border: '1px solid var(--form-input-border)',
                       borderRadius: '50%',
                       width: '30px', height: '30px',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -834,7 +828,7 @@ export default function AccountPage({
                     </span>
                     <h3 style={{
                       fontFamily: 'var(--font-display)', fontSize: '20px',
-                      fontWeight: 800, color: '#fff',
+                      fontWeight: 800, color: 'var(--brand-pearl)',
                       margin: 0
                     }}>
                       Mã Check-in Vé
@@ -875,8 +869,8 @@ export default function AccountPage({
                   {/* Ticket Details */}
                   <div style={{
                     width: '100%',
-                    backgroundColor: 'rgba(255, 255, 255, 0.01)',
-                    border: '1px solid rgba(255, 255, 255, 0.04)',
+                    backgroundColor: 'var(--form-input-bg)',
+                    border: '1px solid var(--form-input-border)',
                     borderRadius: '12px',
                     padding: '16px',
                     display: 'flex',
@@ -887,13 +881,13 @@ export default function AccountPage({
                   }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                       <span style={{ color: 'var(--text-muted)' }}>Sự kiện:</span>
-                      <span style={{ fontWeight: 700, color: '#fff', maxWidth: '240px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <span style={{ fontWeight: 700, color: 'var(--brand-pearl)', maxWidth: '240px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {activeQrTicket.eventTitle}
                       </span>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                       <span style={{ color: 'var(--text-muted)' }}>Khu vực:</span>
-                      <span style={{ fontWeight: 600, color: '#fff' }}>
+                      <span style={{ fontWeight: 600, color: 'var(--brand-pearl)' }}>
                         {activeQrTicket.zoneName}
                       </span>
                     </div>
@@ -1167,10 +1161,14 @@ export default function AccountPage({
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '130px 1fr', gap: '10px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '110px 110px 1fr', gap: '10px' }}>
                 <div>
-                  <label style={labelSt}>Giờ</label>
+                  <label style={labelSt}>Giờ bắt đầu *</label>
                   <input style={inputSt} type="time" value={evtTime} onChange={e => setEvtTime(e.target.value)} />
+                </div>
+                <div>
+                  <label style={labelSt}>Giờ kết thúc</label>
+                  <input style={inputSt} type="time" value={evtEndTime} onChange={e => setEvtEndTime(e.target.value)} />
                 </div>
                 <div>
                   <label style={labelSt}>Địa điểm *</label>

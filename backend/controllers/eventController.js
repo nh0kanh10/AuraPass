@@ -1,3 +1,4 @@
+import { Op } from 'sequelize';
 import { Event, Creator, Zone, Ticket, Booking, ResaleTicket, sequelize } from '../models/index.js';
 
 export const getEvents = async (req, res) => {
@@ -60,7 +61,7 @@ const normalizeEventZones = (zones = []) => zones.map((zone) => {
 });
 
 export const createEvent = async (req, res) => {
-  const { title, description, category, date, time, location, priceRange, image, badge, theme, isFeatured, isTrending, zones, creatorId, organizerId, status, eventType, onlineLink, platform, onlinePassword, onlineInstructions } = req.body;
+  const { title, description, category, date, time, endTime, location, priceRange, image, badge, theme, isFeatured, isTrending, zones, creatorId, organizerId, status, eventType, onlineLink, platform, onlinePassword, onlineInstructions } = req.body;
   const t = await sequelize.transaction();
   try {
     const eventId = `event-${Date.now()}`;
@@ -71,6 +72,7 @@ export const createEvent = async (req, res) => {
       category,
       date,
       time,
+      endTime,
       location,
       priceRange,
       image,
@@ -113,7 +115,7 @@ export const createEvent = async (req, res) => {
 };
 
 export const updateEvent = async (req, res) => {
-  const { title, description, category, date, time, location, priceRange, image, badge, theme, isFeatured, isTrending, zones, creatorId, organizerId, status, eventType, onlineLink, platform, onlinePassword, onlineInstructions } = req.body;
+  const { title, description, category, date, time, endTime, location, priceRange, image, badge, theme, isFeatured, isTrending, zones, creatorId, organizerId, status, eventType, onlineLink, platform, onlinePassword, onlineInstructions } = req.body;
   const t = await sequelize.transaction();
   try {
     const event = await Event.findByPk(req.params.id, { transaction: t });
@@ -125,6 +127,7 @@ export const updateEvent = async (req, res) => {
       category: category !== undefined ? category : event.category,
       date: date !== undefined ? date : event.date,
       time: time !== undefined ? time : event.time,
+      endTime: endTime !== undefined ? endTime : event.endTime,
       location: location !== undefined ? location : event.location,
       priceRange: priceRange !== undefined ? priceRange : event.priceRange,
       image: image !== undefined ? image : event.image,
@@ -144,8 +147,34 @@ export const updateEvent = async (req, res) => {
 
     if (zones) {
       const normalizedZones = normalizeEventZones(zones);
-      await Zone.destroy({ where: { eventId: event.id }, transaction: t });
+      const incomingZoneIds = normalizedZones.map(z => z.id).filter(Boolean);
+
+      // Xóa các zone cũ không còn nằm trong danh sách gửi lên
+      await Zone.destroy({
+        where: {
+          eventId: event.id,
+          id: { [Op.notIn]: incomingZoneIds }
+        },
+        transaction: t
+      });
+
+      // Cập nhật zone hiện tại hoặc tạo mới
       for (const zone of normalizedZones) {
+        if (zone.id) {
+          const existingZone = await Zone.findByPk(zone.id, { transaction: t });
+          if (existingZone) {
+            await existingZone.update({
+              name: zone.name,
+              price: zone.price,
+              isStanding: zone.isStanding,
+              availableTickets: zone.availableTickets,
+              rows: zone.rows || null,
+              cols: zone.cols || null
+            }, { transaction: t });
+            continue;
+          }
+        }
+
         await Zone.create({
           id: zone.id && zone.id.startsWith('zone-') ? zone.id : `zone-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
           eventId: event.id,

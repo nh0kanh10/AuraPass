@@ -465,6 +465,7 @@ export default function AdminDashboard({
   const [eventCategory, setEventCategory] = useState('music');
   const [eventDate, setEventDate] = useState('');
   const [eventTime, setEventTime] = useState('');
+  const [eventEndTime, setEventEndTime] = useState('');
   const [eventLocation, setEventLocation] = useState('');
   const [eventPriceRange, setEventPriceRange] = useState('');
   const [eventImage, setEventImage] = useState('');
@@ -817,6 +818,7 @@ export default function AdminDashboard({
     setEventCategory(event.category || 'music');
     setEventDate(event.date);
     setEventTime(event.time || '19:30');
+    setEventEndTime(event.endTime || '');
     setEventLocation(event.location);
     setEventPriceRange(event.priceRange);
     setEventImage(event.image);
@@ -844,6 +846,7 @@ export default function AdminDashboard({
     setEventCategory('music');
     setEventDate('18 Tháng 11, 2026');
     setEventTime('19:30');
+    setEventEndTime('22:30');
     setEventLocation('Sân vận động Quân khu 7, TP.HCM');
     setEventPriceRange('500.000đ - 3.000.000đ');
     setEventImage('https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=800&q=80');
@@ -878,6 +881,7 @@ export default function AdminDashboard({
       category: eventCategory,
       date: eventDate,
       time: eventTime,
+      endTime: eventEndTime,
       location: eventLocation,
       priceRange: eventPriceRange,
       image: eventImage,
@@ -2032,6 +2036,13 @@ export default function AdminDashboard({
           margin-bottom: 20px;
         }
 
+        .form-grid-3 {
+          display: grid;
+          grid-template-columns: 1fr 1fr 1fr;
+          gap: 16px;
+          margin-bottom: 20px;
+        }
+
         .zone-pill-item {
           display: inline-flex;
           align-items: center;
@@ -2737,7 +2748,7 @@ export default function AdminDashboard({
                     </div>
                   </div>
 
-                  <div className="form-grid-2">
+                  <div className="form-grid-3">
                     <CustomDatePicker 
                       label="Ngày Diễn Ra *" 
                       value={eventDate} 
@@ -2747,6 +2758,11 @@ export default function AdminDashboard({
                       label="Giờ Diễn Ra" 
                       value={eventTime} 
                       onChange={setEventTime} 
+                    />
+                    <CustomTimePicker 
+                      label="Giờ Kết Thúc" 
+                      value={eventEndTime} 
+                      onChange={setEventEndTime} 
                     />
                   </div>
 

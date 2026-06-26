@@ -1254,8 +1254,8 @@ export default function SeatMap({ event, onBack, onProceedCheckout, showAlert })
             <span style={{ fontFamily: 'var(--font-mono)', fontSize: '9.5px', letterSpacing: '0.12em', color: 'var(--brand-cyan)', textTransform: 'uppercase', fontWeight: 600 }}>
               Seat Map Selection
             </span>
-            <h2 style={{ fontSize: '26px', fontFamily: 'var(--font-display)', fontWeight: 700, margin: '8px 0 6px 0', color: '#fff' }}>Chọn Vé & Vị Trí Ghế</h2>
-            <p style={{ fontSize: '16px', color: '#fff', fontWeight: 600, margin: '8px 0 12px 0' }}>{event.title}</p>
+            <h2 style={{ fontSize: '26px', fontFamily: 'var(--font-display)', fontWeight: 700, margin: '8px 0 6px 0', color: 'var(--brand-pearl)' }}>Chọn Vé & Vị Trí Ghế</h2>
+            <p style={{ fontSize: '16px', color: 'var(--brand-pearl)', fontWeight: 600, margin: '8px 0 12px 0' }}>{event.title}</p>
             
             <div style={{ 
               display: 'flex', 
@@ -1299,7 +1299,7 @@ export default function SeatMap({ event, onBack, onProceedCheckout, showAlert })
                   style={{
                     backgroundColor: isActive ? 'rgba(255,255,255,0.04)' : 'transparent',
                     border: `1px solid ${isActive ? (isVip ? 'var(--brand-gold)' : 'var(--brand-violet)') : 'rgba(255,255,255,0.06)'}`,
-                    color: isActive ? 'var(--text-white)' : 'var(--text-muted)',
+                    color: isActive ? 'var(--brand-pearl)' : 'var(--text-muted)',
                     fontFamily: 'var(--font-display)',
                     fontWeight: 600,
                     fontSize: '13.5px',
@@ -1342,9 +1342,9 @@ export default function SeatMap({ event, onBack, onProceedCheckout, showAlert })
             position: 'relative'
           }}>
             <Armchair size={40} color="var(--brand-cyan)" style={{ marginBottom: '20px', opacity: 0.8 }} />
-            <h3 style={{ fontSize: '18px', fontFamily: 'var(--font-display)', color: '#fff', marginBottom: '6px' }}>Vé Đứng GA (Tự Do)</h3>
+            <h3 style={{ fontSize: '18px', fontFamily: 'var(--font-display)', color: 'var(--brand-pearl)', marginBottom: '6px' }}>Vé Đứng GA (Tự Do)</h3>
             <p style={{ fontSize: '13.5px', color: 'var(--text-muted)', marginBottom: '28px', textAlign: 'center', maxWidth: '360px', lineHeight: '1.5' }}>
-              Vị trí đứng tự do trong khu vực phòng vé. Vé còn lại: <strong style={{ color: 'var(--text-white)' }}>{selectedZone.availableTickets}</strong> vé.
+              Vị trí đứng tự do trong khu vực phòng vé. Vé còn lại: <strong style={{ color: 'var(--brand-pearl)' }}>{selectedZone.availableTickets}</strong> vé.
             </p>
 
 
@@ -1356,7 +1356,7 @@ export default function SeatMap({ event, onBack, onProceedCheckout, showAlert })
               >
                 -
               </button>
-              <span style={{ fontSize: '28px', fontFamily: 'var(--font-mono)', fontWeight: 700, width: '40px', textAlign: 'center', color: 'var(--text-white)' }}>
+              <span style={{ fontSize: '28px', fontFamily: 'var(--font-mono)', fontWeight: 700, width: '40px', textAlign: 'center', color: 'var(--brand-pearl)' }}>
                 {standingCount}
               </span>
               <button
