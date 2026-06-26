@@ -1,0 +1,106 @@
+# Hướng dẫn cấu hình Biến môi trường (Environment Variables) - AuraPass
+
+Tài liệu này hướng dẫn cách cấu hình các file `.env` cho 3 phân hệ của dự án AuraPass: **Backend**, **Client** (Frontend người dùng), và **Admin** (Trang quản trị).
+
+---
+
+## 1. Danh sách các file `.env` cần cấu hình
+
+Dự án yêu cầu các file `.env` đặt tại các thư mục tương ứng khi chạy dưới local:
+
+```
+Project_TT_3/
+├── backend/
+│   └── .env
+├── client/
+│   └── .env
+└── admin/
+    └── .env
+```
+
+> [!WARNING]
+> Tuyệt đối không commit các file `.env` chứa thông tin mật khẩu thực tế lên Git. Đảm bảo các file này đã được liệt kê trong `.gitignore`.
+
+---
+
+## 2. Chi tiết cấu hình từng phân hệ
+
+### 2.1. Phân hệ Backend (`backend/.env`)
+File này cấu hình cổng chạy server và kết nối tới cơ sở dữ liệu SQL Server (hoặc các dịch vụ SQL Server đám mây như Somee).
+
+**Nội dung mẫu:**
+```env
+PORT=5000
+DB_HOST=your_database_host
+DB_PORT=1433
+DB_USER=your_database_user
+DB_PASSWORD=your_database_password
+DB_NAME=your_database_name
+DB_DIALECT=mssql
+```
+
+* **PORT**: Cổng chạy Backend API local (mặc định là `5000`).
+* **DB_HOST**: Địa chỉ máy chủ database SQL Server.
+* **DB_PORT**: Cổng kết nối SQL Server (mặc định `1433`).
+* **DB_USER**: Tên tài khoản kết nối SQL Server.
+* **DB_PASSWORD**: Mật khẩu tài khoản database.
+* **DB_NAME**: Tên database.
+
+---
+
+### 2.2. Phân hệ Client (`client/.env`)
+File này cấu hình địa chỉ kết nối API Backend và thông tin tải ảnh lên Cloudinary.
+
+**Nội dung mẫu:**
+```env
+VITE_API_URL=http://localhost:5000
+VITE_CLOUDINARY_CLOUD_NAME=your_cloudinary_cloud_name
+VITE_CLOUDINARY_UPLOAD_PRESET=your_cloudinary_upload_preset
+```
+
+* **VITE_API_URL**: Đường dẫn URL tới Backend API.
+  * *Chạy local:* `http://localhost:5000`
+  * *Chạy production:* `https://aurapass-c4og.onrender.com` (Render URL của bạn)
+* **VITE_CLOUDINARY_CLOUD_NAME**: Cloud Name từ tài khoản Cloudinary của bạn dùng để lưu trữ ảnh sự kiện tải lên.
+* **VITE_CLOUDINARY_UPLOAD_PRESET**: Preset name đã cấu hình quyền upload không cần ký tên (unsigned uploads) trên Cloudinary.
+
+---
+
+### 2.3. Phân hệ Admin (`admin/.env`)
+Phân hệ Admin chỉ cần đường dẫn kết nối API Backend.
+
+**Nội dung mẫu:**
+```env
+VITE_API_URL=http://localhost:5000
+```
+
+* **VITE_API_URL**: Đường dẫn URL tới Backend API.
+  * *Chạy local:* `http://localhost:5000`
+  * *Chạy production:* `https://aurapass-c4og.onrender.com`
+
+---
+
+## 3. Hướng dẫn thiết lập trên môi trường Production (Đám mây)
+
+Khi triển khai lên các dịch vụ đám mây, bạn không cần tạo file `.env` mà cần cấu hình trực tiếp trong trang quản trị của dịch vụ đó:
+
+### 3.1. Trên Render (Dành cho Backend)
+1. Truy cập vào trang quản trị dịch vụ Web Service của bạn trên Render.
+2. Chọn mục **Environment**.
+3. Thêm các cặp khóa-giá trị (Key-Value) tương ứng với các biến trong file `backend/.env`:
+   * `PORT`
+   * `DB_HOST`
+   * `DB_PORT`
+   * `DB_USER`
+   * `DB_PASSWORD`
+   * `DB_NAME`
+   * `DB_DIALECT`
+4. Bấm **Save Changes** để dịch vụ tự động rebuild với cấu hình mới.
+
+### 3.2. Trên Vercel (Dành cho Client và Admin)
+1. Truy cập trang quản trị Project của bạn trên Vercel.
+2. Chọn tab **Settings** -> chọn **Environment Variables**.
+3. Thêm các biến tương ứng:
+   * Cho Client: `VITE_API_URL`, `VITE_CLOUDINARY_CLOUD_NAME`, `VITE_CLOUDINARY_UPLOAD_PRESET`
+   * Cho Admin: `VITE_API_URL`
+4. Bấm **Save** và thực hiện Redeploy dự án để áp dụng các biến mới.
