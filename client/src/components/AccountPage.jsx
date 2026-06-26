@@ -110,6 +110,7 @@ export default function AccountPage({
   const [resalePrice, setResalePrice] = useState('');
   const [submittingResale, setSubmittingResale] = useState(false);
   const [ticketFilter, setTicketFilter] = useState('all'); // 'all' | 'active' | 'expired' | 'used'
+  const [activeQrTicket, setActiveQrTicket] = useState(null);
 
   const now = new Date();
   // Helpers để xác định trạng thái vé dựa trên eventDate từ backend
@@ -592,13 +593,22 @@ export default function AccountPage({
                     {isExpanded && (
                       <div style={{ borderTop: '1px solid var(--ticket-divider)', padding: '16px', background: 'var(--ticket-body-bg)' }}>
                         {/* QR area */}
-                        <div style={{
-                          padding: '14px', background: 'var(--ticket-qr-bg)', borderRadius: '8px',
-                          marginBottom: '14px', textAlign: 'center', border: '1px dashed var(--ticket-divider)'
-                        }}>
+                        <div 
+                          onClick={() => setActiveQrTicket(ticket)}
+                          style={{
+                            padding: '14px', background: 'var(--ticket-qr-bg)', borderRadius: '8px',
+                            marginBottom: '14px', textAlign: 'center', border: '1px dashed var(--ticket-divider)',
+                            cursor: 'pointer', transition: 'all 0.25s ease'
+                          }}
+                          onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--brand-cyan)'}
+                          onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--ticket-divider)'}
+                        >
                           <QrCode size={28} style={{ margin: '0 auto 8px', display: 'block', color: 'var(--ticket-label)' }} />
                           <div style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', color: 'var(--ticket-label)', letterSpacing: '0.06em', wordBreak: 'break-all' }}>
                             {ticket.qrCode}
+                          </div>
+                          <div style={{ marginTop: '8px', fontSize: '9px', fontFamily: 'var(--font-mono)', color: 'var(--brand-cyan)', fontWeight: 'bold' }}>
+                            [ CLICK ĐỂ XEM MÃ QR CHI TIẾT ]
                           </div>
                         </div>
 
@@ -678,29 +688,44 @@ export default function AccountPage({
                           }}>
                             {isUsed ? '✓ Đã sử dụng' : '✗ Hết hạn sử dụng'}
                           </div>
-                        ) : !isReselling ? (
-                          <button
-                            style={{
-                              width: '100%', padding: '8px', borderRadius: '6px',
-                              border: '1px solid var(--brand-gold)', background: 'transparent',
-                              color: 'var(--brand-gold)', fontSize: '12px', fontFamily: 'var(--font-mono)',
-                              cursor: 'pointer', letterSpacing: '0.05em', transition: 'background 0.2s'
-                            }}
-                            onClick={() => { setResalePending(ticket); setResalePrice(String(Math.round(ticket.price * 0.85))); }}
-                          >
-                            BÁN LẠI
-                          </button>
                         ) : (
-                          <button
-                            style={{
-                              width: '100%', padding: '8px', borderRadius: '6px',
-                              border: '1px solid rgba(255,255,255,0.15)', background: 'transparent',
-                              color: 'var(--text-muted)', fontSize: '12px', fontFamily: 'var(--font-mono)', cursor: 'pointer'
-                            }}
-                            onClick={() => handleCancelResale(ticket)}
-                          >
-                            THU HỒI
-                          </button>
+                          <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
+                            <button
+                              style={{
+                                flex: 1, padding: '8px', borderRadius: '6px',
+                                border: '1px solid var(--brand-cyan)', background: 'transparent',
+                                color: 'var(--brand-cyan)', fontSize: '12px', fontFamily: 'var(--font-mono)',
+                                cursor: 'pointer', letterSpacing: '0.05em', transition: 'background 0.2s'
+                              }}
+                              onClick={() => setActiveQrTicket(ticket)}
+                            >
+                              XEM MÃ QR
+                            </button>
+                            {!isReselling ? (
+                              <button
+                                style={{
+                                  flex: 1, padding: '8px', borderRadius: '6px',
+                                  border: '1px solid var(--brand-gold)', background: 'transparent',
+                                  color: 'var(--brand-gold)', fontSize: '12px', fontFamily: 'var(--font-mono)',
+                                  cursor: 'pointer', letterSpacing: '0.05em', transition: 'background 0.2s'
+                                }}
+                                onClick={() => { setResalePending(ticket); setResalePrice(String(Math.round(ticket.price * 0.85))); }}
+                              >
+                                BÁN LẠI
+                              </button>
+                            ) : (
+                              <button
+                                style={{
+                                  flex: 1, padding: '8px', borderRadius: '6px',
+                                  border: '1px solid rgba(255,255,255,0.15)', background: 'transparent',
+                                  color: 'var(--text-muted)', fontSize: '12px', fontFamily: 'var(--font-mono)', cursor: 'pointer'
+                                }}
+                                onClick={() => handleCancelResale(ticket)}
+                              >
+                                THU HỒI
+                              </button>
+                            )}
+                          </div>
                         )}
                       </div>
                     )}
@@ -743,6 +768,167 @@ export default function AccountPage({
             </div>,
             document.body
           )}
+
+          {/* Active QR Ticket Modal */}
+          {activeQrTicket && (() => {
+            const qrData = JSON.stringify({
+              ticketId: activeQrTicket.id,
+              eventTitle: activeQrTicket.eventTitle,
+              zone: activeQrTicket.zoneName,
+              seat: activeQrTicket.seatNumber || 'GA'
+            });
+            const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&color=0b0b0f&bgcolor=ffffff&data=${encodeURIComponent(qrData)}`;
+
+            return createPortal(
+              <div
+                className="modal-overlay-scrollable"
+                onClick={(e) => { if (e.target === e.currentTarget) setActiveQrTicket(null); }}
+                style={{
+                  position: 'fixed', inset: 0,
+                  backgroundColor: 'rgba(5, 4, 10, 0.92)',
+                  backdropFilter: 'blur(24px)',
+                  WebkitBackdropFilter: 'blur(24px)',
+                  zIndex: 9999,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center'
+                }}
+              >
+                <div className="resale-price-modal-card" style={{
+                  width: '92%',
+                  maxWidth: '420px',
+                  background: 'linear-gradient(160deg, rgba(38, 30, 64, 0.98) 0%, rgba(22, 16, 42, 0.99) 100%)',
+                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                  borderRadius: '24px',
+                  padding: '36px 32px 32px 32px',
+                  boxShadow: '0 30px 80px rgba(0,0,0,0.95)',
+                  position: 'relative',
+                  textAlign: 'center',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: '20px'
+                }}>
+                  <button
+                    onClick={() => setActiveQrTicket(null)}
+                    style={{
+                      position: 'absolute', top: '18px', right: '18px',
+                      background: 'rgba(255,255,255,0.04)',
+                      border: '1px solid rgba(255,255,255,0.08)',
+                      borderRadius: '50%',
+                      width: '30px', height: '30px',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      color: 'var(--text-muted)', cursor: 'pointer', transition: 'all 0.2s ease',
+                      zIndex: 10
+                    }}
+                  >
+                    <X size={13} />
+                  </button>
+
+                  <div style={{ width: '100%' }}>
+                    <span style={{
+                      fontFamily: 'var(--font-mono)', fontSize: '8.5px',
+                      letterSpacing: '0.14em', color: 'var(--brand-cyan)',
+                      fontWeight: 700, textTransform: 'uppercase',
+                      display: 'block', marginBottom: '6px'
+                    }}>
+                      ✦ Vé Điện Tử · E-Ticket
+                    </span>
+                    <h3 style={{
+                      fontFamily: 'var(--font-display)', fontSize: '20px',
+                      fontWeight: 800, color: '#fff',
+                      margin: 0
+                    }}>
+                      Mã Check-in Vé
+                    </h3>
+                  </div>
+
+                  {/* QR Image Frame */}
+                  <div style={{
+                    padding: '16px',
+                    backgroundColor: '#fff',
+                    borderRadius: '16px',
+                    boxShadow: '0 12px 36px rgba(0,0,0,0.6)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}>
+                    <img 
+                      src={qrCodeUrl} 
+                      alt="Check-in QR" 
+                      style={{ width: '180px', height: '180px' }}
+                    />
+                    <span style={{ 
+                      fontSize: '9.5px', 
+                      fontFamily: 'var(--font-mono)', 
+                      fontWeight: 700, 
+                      color: '#0b0b0f', 
+                      borderTop: '1px dashed #ddd', 
+                      width: '100%', 
+                      textAlign: 'center', 
+                      paddingTop: '6px', 
+                      letterSpacing: '0.08em' 
+                    }}>
+                      {(activeQrTicket.id || '').toUpperCase()}
+                    </span>
+                  </div>
+
+                  {/* Ticket Details */}
+                  <div style={{
+                    width: '100%',
+                    backgroundColor: 'rgba(255, 255, 255, 0.01)',
+                    border: '1px solid rgba(255, 255, 255, 0.04)',
+                    borderRadius: '12px',
+                    padding: '16px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '8px',
+                    fontSize: '13px',
+                    textAlign: 'left'
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ color: 'var(--text-muted)' }}>Sự kiện:</span>
+                      <span style={{ fontWeight: 700, color: '#fff', maxWidth: '240px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {activeQrTicket.eventTitle}
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ color: 'var(--text-muted)' }}>Khu vực:</span>
+                      <span style={{ fontWeight: 600, color: '#fff' }}>
+                        {activeQrTicket.zoneName}
+                      </span>
+                    </div>
+                    {activeQrTicket.seatNumber && (
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ color: 'var(--text-muted)' }}>Vị trí ghế:</span>
+                        <span style={{ fontWeight: 700, color: 'var(--brand-cyan)', fontFamily: 'var(--font-mono)' }}>
+                          {activeQrTicket.seatNumber}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  <button
+                    onClick={() => setActiveQrTicket(null)}
+                    style={{
+                      width: '100%', height: '44px',
+                      background: 'linear-gradient(135deg, var(--brand-violet) 0%, oklch(48% 0.25 300) 100%)',
+                      border: '1px solid rgba(167, 139, 250, 0.25)',
+                      borderRadius: '10px',
+                      color: '#fff',
+                      fontSize: '13px', fontWeight: 600,
+                      fontFamily: 'var(--font-mono)',
+                      cursor: 'pointer', transition: 'all 0.25s ease',
+                      letterSpacing: '0.04em',
+                      boxShadow: '0 4px 12px rgba(139, 92, 246, 0.15)'
+                    }}
+                  >
+                    XÁC NHẬN
+                  </button>
+                </div>
+              </div>,
+              document.body
+            );
+          })()}
         </div>
       )}
 

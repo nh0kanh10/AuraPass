@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Armchair, ArrowLeft, Layers, Info } from 'lucide-react';
+import { Armchair, ArrowLeft, Layers, Info, Calendar, Clock, MapPin } from 'lucide-react';
 
 const getSeatLayoutFromCapacity = (capacity = 0) => {
   const total = Math.max(1, Number(capacity) || 0);
@@ -15,6 +15,62 @@ const normalizeSeatZones = (zones = []) => zones.map((zone) => {
   const layout = getSeatLayoutFromCapacity(zone.availableTickets);
   return { ...zone, ...layout, availableTickets: layout.rows * layout.cols };
 });
+
+const calculateEndTime = (startTime, category) => {
+  if (!startTime) return '';
+  try {
+    const parts = startTime.split(':');
+    if (parts.length < 2) return '';
+    const hours = parseInt(parts[0], 10);
+    const minutes = parseInt(parts[1], 10);
+    let durationHours = 3; 
+    if (category === 'workshop') {
+      durationHours = 2; 
+    } else if (category === 'theater') {
+      durationHours = 2.5; 
+    }
+    
+    let endHours = hours + Math.floor(durationHours);
+    let endMinutes = minutes + (durationHours % 1) * 60;
+    if (endMinutes >= 60) {
+      endHours += 1;
+      endMinutes -= 60;
+    }
+    endHours = endHours % 24;
+    return `${String(endHours).padStart(2, '0')}:${String(endMinutes).padStart(2, '0')}`;
+  } catch (e) {
+    return '';
+  }
+};
+
+const calculateDuration = (startTime, endTime) => {
+  if (!startTime || !endTime) return '';
+  try {
+    const [startH, startM] = startTime.split(':').map(Number);
+    const [endH, endM] = endTime.split(':').map(Number);
+    
+    let startMinutes = startH * 60 + startM;
+    let endMinutes = endH * 60 + endM;
+    
+    if (endMinutes < startMinutes) {
+      endMinutes += 24 * 60;
+    }
+    
+    const diffMinutes = endMinutes - startMinutes;
+    const hours = Math.floor(diffMinutes / 60);
+    const mins = diffMinutes % 60;
+    
+    if (hours === 0) {
+      return `${mins} phút`;
+    }
+    if (mins === 0) {
+      return `${hours} tiếng`;
+    }
+    return `${hours} tiếng ${mins} phút`;
+  } catch (e) {
+    return '';
+  }
+};
 
 export default function SeatMap({ event, onBack, onProceedCheckout, showAlert }) {
   console.log('[SeatMap] eventType:', event?.eventType, '| id:', event?.id, '| title:', event?.title);
@@ -1199,7 +1255,35 @@ export default function SeatMap({ event, onBack, onProceedCheckout, showAlert })
               Seat Map Selection
             </span>
             <h2 style={{ fontSize: '26px', fontFamily: 'var(--font-display)', fontWeight: 700, margin: '8px 0 6px 0', color: '#fff' }}>Chọn Vé & Vị Trí Ghế</h2>
-            <p style={{ fontSize: '14px', color: 'var(--text-muted)' }}>{event.title}</p>
+            <p style={{ fontSize: '16px', color: '#fff', fontWeight: 600, margin: '8px 0 12px 0' }}>{event.title}</p>
+            
+            <div style={{ 
+              display: 'flex', 
+              flexDirection: 'column', 
+              gap: '8px', 
+              fontSize: '13px', 
+              color: 'var(--text-muted)',
+              borderTop: '1px dashed rgba(255, 255, 255, 0.1)',
+              paddingTop: '12px',
+              marginTop: '12px',
+              textAlign: 'left'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Calendar size={14} color="var(--brand-cyan)" style={{ flexShrink: 0 }} />
+                <span><strong>Ngày diễn ra:</strong> {event.date}</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Clock size={14} color="var(--brand-cyan)" style={{ flexShrink: 0 }} />
+                <span>
+                  <strong>Thời gian:</strong> {event.time} - {event.endTime || calculateEndTime(event.time, event.category)}
+                  {event.endTime ? ` (${calculateDuration(event.time, event.endTime)})` : ' (Dự kiến)'}
+                </span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+                <MapPin size={14} color="var(--brand-cyan)" style={{ marginTop: '2px', flexShrink: 0 }} />
+                <span><strong>Địa điểm/Địa chỉ:</strong> {event.location}</span>
+              </div>
+            </div>
           </div>
 
 

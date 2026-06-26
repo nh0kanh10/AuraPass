@@ -10,7 +10,7 @@ export default function EventCard({ event, isFeatured, onClick }) {
         text: 'var(--brand-violet)',
         bg: 'rgba(139, 92, 246, 0.12)',
         glow: 'rgba(139, 92, 246, 0.2)',
-        label: 'Music Concert'
+        label: 'ĐẠI NHẠC HỘI'
       };
       case 'theater': return {
         border: 'rgba(6, 182, 212, 0.22)',
@@ -18,7 +18,7 @@ export default function EventCard({ event, isFeatured, onClick }) {
         text: 'var(--brand-cyan)',
         bg: 'rgba(6, 182, 212, 0.12)',
         glow: 'rgba(6, 182, 212, 0.2)',
-        label: 'Theater Play'
+        label: 'KỊCH NGHỆ'
       };
       case 'workshop': return {
         border: 'rgba(16, 185, 129, 0.22)',
@@ -26,7 +26,7 @@ export default function EventCard({ event, isFeatured, onClick }) {
         text: 'var(--brand-emerald)',
         bg: 'rgba(16, 185, 129, 0.12)',
         glow: 'rgba(16, 185, 129, 0.2)',
-        label: 'Art Workshop'
+        label: 'WORKSHOP NGHỆ THUẬT'
       };
       default: return {
         border: 'rgba(255, 255, 255, 0.12)',
@@ -34,22 +34,32 @@ export default function EventCard({ event, isFeatured, onClick }) {
         text: 'var(--text-white)',
         bg: 'rgba(255, 255, 255, 0.08)',
         glow: 'rgba(255, 255, 255, 0.1)',
-        label: 'Special Event'
+        label: 'SỰ KIỆN ĐẶC BIỆT'
       };
     }
   };
 
   const config = getCategoryConfig(event.category);
 
-  // Định dạng ngày ngắn (ví dụ: 28/08/2026 -> 28 AUG 2026)
+  // Định dạng ngày ngắn (ví dụ: 28/08/2026 -> 28 Thg 8 2026)
   const getShortDate = (str) => {
     try {
+      if (!str) return 'TBA';
+      if (str.includes('Hằng Ngày')) return 'VÉ HÀNG NGÀY';
+      
+      const months = ['Thg 1', 'Thg 2', 'Thg 3', 'Thg 4', 'Thg 5', 'Thg 6', 'Thg 7', 'Thg 8', 'Thg 9', 'Thg 10', 'Thg 11', 'Thg 12'];
+      
+      // Hỗ trợ định dạng YYYY-MM-DD
+      if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
+        const [year, month, day] = str.split('T')[0].split('-').map(Number);
+        return `${String(day).padStart(2, '0')} ${months[month - 1]} ${year}`;
+      }
+      
       const cleanStr = str.replace(/Tháng\s+/i, '').replace(',', '');
       const parts = cleanStr.split(/\s+/);
       const day = parts[0];
       const monthIndex = parseInt(parts[1], 10);
       const year = parts[2] || '2026';
-      const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
       const month = months[monthIndex - 1] || parts[1];
       return `${day} ${month} ${year}`;
     } catch (e) {
@@ -309,7 +319,7 @@ export default function EventCard({ event, isFeatured, onClick }) {
         <div className="banner-content-deck">
           <div>
             <div className="banner-badge">
-              ✦ Featured Show
+              ✦ Sự Kiện Nổi Bật
             </div>
 
             <h2 className="banner-title">
@@ -325,13 +335,13 @@ export default function EventCard({ event, isFeatured, onClick }) {
             {/* Dải thông số Monospace */}
             <div className="banner-info-bar">
               <span className="banner-ticket-pill">
-                DATE • <strong>{getShortDate(event.date)}</strong>
+                NGÀY • <strong>{getShortDate(event.date)}</strong>
               </span>
               <span className="banner-ticket-pill">
-                VENUE • <strong>{getShortVenue(event.location)}</strong>
+                ĐỊA ĐIỂM • <strong>{getShortVenue(event.location)}</strong>
               </span>
               <span className="banner-ticket-pill" style={{ borderColor: config.border, background: 'rgba(255,255,255,0.01)' }}>
-                PRICE • <strong style={{ color: config.text }}>{formatPriceNum(event.priceRange)}</strong>
+                GIÁ VÉ • <strong style={{ color: config.text }}>{formatPriceNum(event.priceRange)}</strong>
               </span>
             </div>
 
@@ -366,7 +376,7 @@ export default function EventCard({ event, isFeatured, onClick }) {
             color: 'var(--brand-cyan)', fontSize: '9px', fontWeight: 700,
             padding: '4px 10px', borderRadius: '4px',
             fontFamily: 'var(--font-mono)', letterSpacing: '1px'
-          }}>💻 ONLINE</div>
+          }}>💻 TRỰC TUYẾN</div>
         )}
         {event.eventType === 'workshop' && (
           <div style={{
@@ -572,7 +582,7 @@ export default function EventCard({ event, isFeatured, onClick }) {
             padding: '3px 7px', borderRadius: '4px',
             fontFamily: 'var(--font-mono)', letterSpacing: '1px',
             display: 'flex', alignItems: 'center', gap: '4px'
-          }}><Monitor size={9} strokeWidth={2.5} /> ONLINE</div>
+          }}><Monitor size={9} strokeWidth={2.5} /> TRỰC TUYẾN</div>
         )}
         {event.eventType === 'workshop' && (
           <div style={{
@@ -598,17 +608,17 @@ export default function EventCard({ event, isFeatured, onClick }) {
         {/* Dải thông số */}
         <div className="normal-card-info-bar">
           <div className="normal-info-row">
-            <span className="normal-info-label">DATE</span>
+            <span className="normal-info-label">NGÀY</span>
             <span className="normal-info-value">{getShortDate(event.date)}</span>
           </div>
           <div className="normal-info-row">
-            <span className="normal-info-label">VENUE</span>
+            <span className="normal-info-label">ĐỊA ĐIỂM</span>
             <span className="normal-info-value" style={{ maxWidth: '160px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {getShortVenue(event.location)}
             </span>
           </div>
           <div className="normal-info-row" style={{ borderBottom: 'none', paddingBottom: 0 }}>
-            <span className="normal-info-label">PRICE</span>
+            <span className="normal-info-label">GIÁ VÉ</span>
             <span className="normal-info-value" style={{ color: config.text, fontWeight: 700 }}>
               {event.priceRange.split(' ')[0]}
             </span>

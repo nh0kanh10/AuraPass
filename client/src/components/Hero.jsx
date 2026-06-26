@@ -53,7 +53,7 @@ function TicketCountdown({ dateStr, isActive }) {
   }, [dateStr]);
 
   const formatCountdown = () => {
-    if (timeLeft.expired) return 'LIVE NOW';
+    if (timeLeft.expired) return 'ĐANG DIỄN RA';
     const d = String(timeLeft.days).padStart(2, '0');
     const h = String(timeLeft.hours).padStart(2, '0');
     const m = String(timeLeft.minutes).padStart(2, '0');
@@ -82,7 +82,7 @@ function TicketCountdown({ dateStr, isActive }) {
       pointerEvents: 'none'
     }}>
       <span style={{ fontSize: '7px', opacity: 0.6, textTransform: 'uppercase', letterSpacing: '0.12em' }}>
-        {timeLeft.isUrgent ? 'SELLING FAST' : 'STARTS IN'}
+        {timeLeft.isUrgent ? 'BÁN CHẠY' : 'BẮT ĐẦU SAU'}
       </span>
       <span style={{ fontWeight: 700, letterSpacing: '0.03em' }}>{formatCountdown()}</span>
     </div>
@@ -123,8 +123,8 @@ const musicWave2D = generateAudioWaveformPath(3.5);  // Sóng nhạc phụ tạo
 const getShortDate = (dateStr) => {
   try {
     if (!dateStr) return 'TBA';
-    if (dateStr.includes('Hằng Ngày')) return 'DAILY PASS';
-    const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+    if (dateStr.includes('Hằng Ngày')) return 'VÉ HÀNG NGÀY';
+    const months = ['Thg 1', 'Thg 2', 'Thg 3', 'Thg 4', 'Thg 5', 'Thg 6', 'Thg 7', 'Thg 8', 'Thg 9', 'Thg 10', 'Thg 11', 'Thg 12'];
     if (/^\d{4}-\d{2}-\d{2}/.test(dateStr)) {
       const [year, month, day] = dateStr.split('T')[0].split('-').map(Number);
       return `${String(day).padStart(2, '0')} ${months[month - 1]} ${year}`;
@@ -581,7 +581,7 @@ export default function Hero({ events, onBookClick }) {
                             textTransform: 'uppercase',
                             letterSpacing: '0.08em'
                           }}>
-                            Selling Fast
+                            Bán Chạy
                           </span>
                           <span style={{
                             fontSize: '9px',
@@ -596,7 +596,7 @@ export default function Hero({ events, onBookClick }) {
                             border: '1px solid var(--badge-border)',
                             backdropFilter: 'blur(4px)'
                           }}>
-                            Premiere 2026
+                            Ra Mắt 2026
                           </span>
                         </div>
 
@@ -610,7 +610,7 @@ export default function Hero({ events, onBookClick }) {
                           paddingBottom: '2px',
                           display: 'inline-block'
                         }}>
-                          {event.category === 'music' ? 'MUSIC CONCERT' : event.category === 'theater' ? 'THEATER PLAY' : 'ART WORKSHOP'}
+                          {event.category === 'music' ? 'ĐẠI NHẠC HỘI' : event.category === 'theater' ? 'KỊCH NGHỆ' : 'WORKSHOP NGHỆ THUẬT'}
                         </span>
 
                         <h2 style={{
@@ -698,19 +698,19 @@ export default function Hero({ events, onBookClick }) {
 
                     {/* Loại vé */}
                     <div className="ticket-stub-badge">
-                      {event.theme === 'slate' ? 'PREMIERE PASS' : event.theme === 'pearl' ? 'LIMITED ENTRY' : 'VIP PASS'}
+                      {event.theme === 'slate' ? 'VÉ TIÊU CHUẨN' : event.theme === 'pearl' ? 'VÉ GIỚI HẠN' : 'VÉ VIP'}
                     </div>
 
                     {/* Thông tin sự kiện */}
                     <div className="ticket-stub-info">
                       <h3 className="ticket-stub-title">
-                        {event.title.replace(/NHẠC KỊCH BROADWAY:\s*/i, '').replace(/HÀI KỊCH:\s*/i, '').replace(/WORKSHOP:\s*/i, '').toUpperCase()}
+                        {event.title.replace(/^[^:]+:\s*/, '').toUpperCase()}
                       </h3>
                       <div className="ticket-stub-date">
                         {getShortDate(event.date)}
                       </div>
                       <div className="ticket-stub-seat">
-                        {event.theme === 'slate' ? 'SEC A • A-24' : event.theme === 'pearl' ? 'SEC B • B-08' : 'VIP • V-12'}
+                        {event.theme === 'slate' ? 'KHU A • A-24' : event.theme === 'pearl' ? 'KHU B • B-08' : 'VIP • V-12'}
                       </div>
                     </div>
 

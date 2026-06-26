@@ -23,6 +23,9 @@ const Event = sequelize.define('Event', {
   time: {
     type: DataTypes.STRING(50)
   },
+  endTime: {
+    type: DataTypes.STRING(50)
+  },
   location: {
     type: DataTypes.STRING(550)
   },
