@@ -622,7 +622,7 @@ export default function AccountPage({
 
                 // Badge
                 let badgeBg = 'var(--brand-emerald)';
-                let badgeLabel = 'ACTIVE';
+                let badgeLabel = 'HOẠT ĐỘNG';
                 let badgeColor = '#000';
                 if (isUsed) { badgeBg = 'rgba(100,100,100,0.85)'; badgeLabel = 'ĐÃ DÙNG'; badgeColor = '#fff'; }
                 else if (isExpired) { badgeBg = 'var(--brand-rose)'; badgeLabel = 'HẾT HẠN'; }
