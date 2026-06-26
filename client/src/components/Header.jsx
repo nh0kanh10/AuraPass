@@ -284,8 +284,17 @@ export default function Header({
           badge: evtBadge,
           theme: evtTheme,
           zones: evtEventType === 'online'
-            ? [{ id: `zone-online-${Date.now()}`, name: 'Vé tham dự trực tuyến', price: Number(evtOnlinePrice) || 0, isStanding: true, availableTickets: Number(evtOnlineCapacity) || 100, rows: null, cols: null }]
+            ? [{ 
+                id: (isEdit && editingEvent && editingEvent.zones && editingEvent.zones[0]) ? editingEvent.zones[0].id : `zone-online-${Date.now()}`, 
+                name: 'Vé tham dự trực tuyến', 
+                price: Number(evtOnlinePrice) || 0, 
+                isStanding: true, 
+                availableTickets: Number(evtOnlineCapacity) || 100, 
+                rows: null, 
+                cols: null 
+              }]
             : normalizeOrganizerZones(evtZones),
+
           organizerId: currentUser ? currentUser.id : null,
           creatorId: myCreator ? myCreator.id : (isEdit ? editingEvent.creatorId : null),
           status: isEdit ? editingEvent.status : 'pending',

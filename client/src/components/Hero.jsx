@@ -124,18 +124,19 @@ const getShortDate = (dateStr) => {
   try {
     if (!dateStr) return 'TBA';
     if (dateStr.includes('Hằng Ngày')) return 'VÉ HÀNG NGÀY';
-    const months = ['Thg 1', 'Thg 2', 'Thg 3', 'Thg 4', 'Thg 5', 'Thg 6', 'Thg 7', 'Thg 8', 'Thg 9', 'Thg 10', 'Thg 11', 'Thg 12'];
     if (/^\d{4}-\d{2}-\d{2}/.test(dateStr)) {
-      const [year, month, day] = dateStr.split('T')[0].split('-').map(Number);
-      return `${String(day).padStart(2, '0')} ${months[month - 1]} ${year}`;
+      const [year, month, day] = dateStr.split('T')[0].split('-').map(String);
+      return `${day.padStart(2, '0')}-${month.padStart(2, '0')}-${year}`;
     }
-    const cleanStr = dateStr.replace(/Tháng\s+/i, '').replace(',', '');
+    const cleanStr = dateStr.replace(/Tháng\s*/i, '').replace(',', '');
     const parts = cleanStr.split(/\s+/);
-    const day = parts[0];
-    const monthIndex = parseInt(parts[1], 10);
-    const year = parts[2] || '2026';
-    const month = months[monthIndex - 1] || parts[1];
-    return `${day} ${month} ${year}`;
+    if (parts.length >= 3) {
+      const day = parts[0].padStart(2, '0');
+      const month = parts[1].padStart(2, '0');
+      const year = parts[2] || '2026';
+      return `${day}-${month}-${year}`;
+    }
+    return dateStr;
   } catch (e) {
     return dateStr;
   }
@@ -652,7 +653,7 @@ export default function Hero({ events, onBookClick }) {
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'inherit' }}>
                             <Calendar size={14} />
-                            <span style={{ fontWeight: 500, fontFamily: 'var(--font-mono)' }}>{event.date}</span>
+                            <span style={{ fontWeight: 500, fontFamily: 'var(--font-mono)' }}>{getShortDate(event.date)}</span>
                           </div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'inherit' }}>
                             <MapPin size={14} />

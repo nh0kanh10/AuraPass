@@ -146,17 +146,44 @@ export const updateEvent = async (req, res) => {
     }, { transaction: t });
 
     if (zones) {
+      console.log('--- UPDATE EVENT ZONES DEBUG ---');
+      console.log('Received zones:', JSON.stringify(zones, null, 2));
       const normalizedZones = normalizeEventZones(zones);
+      console.log('Normalized zones:', JSON.stringify(normalizedZones, null, 2));
       const incomingZoneIds = normalizedZones.map(z => z.id).filter(Boolean);
+      console.log('incomingZoneIds:', incomingZoneIds);
+      console.log('--------------------------------');
 
-      // Xóa các zone cũ không còn nằm trong danh sách gửi lên
-      await Zone.destroy({
-        where: {
-          eventId: event.id,
-          id: { [Op.notIn]: incomingZoneIds }
-        },
+      // Lấy tất cả các zone hiện có của event này trong DB
+      const existingZonesInDb = await Zone.findAll({
+        where: { eventId: event.id },
         transaction: t
       });
+
+      // Duyệt qua các zone cũ để xóa những zone không còn gửi lên (nếu chưa có bookings)
+      for (const dbZone of existingZonesInDb) {
+        if (!incomingZoneIds.includes(dbZone.id)) {
+          // Kiểm tra xem zone này đã có bookings hoặc tickets nào chưa
+          const hasBookings = await Booking.findOne({
+            where: { zoneId: dbZone.id },
+            transaction: t
+          });
+          const hasTickets = await Ticket.findOne({
+            where: { zoneId: dbZone.id },
+            transaction: t
+          });
+
+          if (!hasBookings && !hasTickets) {
+            // Chỉ xóa nếu chưa có bất kỳ booking hoặc ticket nào liên kết
+            await Zone.destroy({
+              where: { id: dbZone.id },
+              transaction: t
+            });
+          } else {
+            console.log(`[Warning] Bỏ qua việc xóa zone ${dbZone.id} (${dbZone.name}) vì đã có bookings hoặc tickets liên kết trong DB.`);
+          }
+        }
+      }
 
       // Cập nhật zone hiện tại hoặc tạo mới
       for (const zone of normalizedZones) {

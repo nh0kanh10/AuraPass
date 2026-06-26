@@ -9,6 +9,24 @@ import {
 
 const fmt = (n) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n || 0);
 
+const formatDate = (dateStr) => {
+  if (!dateStr) return '';
+  if (dateStr.includes('Hằng Ngày')) return 'VÉ HÀNG NGÀY';
+  if (/^\d{4}-\d{2}-\d{2}/.test(dateStr)) {
+    const [year, month, day] = dateStr.split('T')[0].split('-').map(String);
+    return `${day.padStart(2, '0')}-${month.padStart(2, '0')}-${year}`;
+  }
+  const cleanStr = dateStr.replace(/Tháng\s*/i, '').replace(',', '');
+  const parts = cleanStr.split(/\s+/);
+  if (parts.length >= 3) {
+    const day = parts[0].padStart(2, '0');
+    const month = parts[1].padStart(2, '0');
+    const year = parts[2];
+    return `${day}-${month}-${year}`;
+  }
+  return dateStr;
+};
+
 const seatCalc = (n) => { const t = Math.max(1, Number(n) || 0), c = Math.min(t, 10); return { rows: Math.ceil(t / c), cols: c }; };
 
 const normalizeZones = (zones = []) => zones.map((z, i) => {
@@ -116,7 +134,7 @@ export default function AccountPage({
   // Helpers để xác định trạng thái vé dựa trên eventDate từ backend
   const getTicketStatus = (ticket) => {
     const isUsed = ticket.status === 'used' || ticket.used === true;
-    
+
     let isExpired = false;
     let isSalesClosed = false;
     if (ticket.eventDate) {
@@ -148,7 +166,7 @@ export default function AccountPage({
           const eventStart = new Date(year, month, day, hours, minutes, 0);
           const now = new Date();
           isExpired = eventStart <= now;
-          
+
           const salesCloseDateTime = new Date(eventStart.getTime() - 60 * 60 * 1000);
           isSalesClosed = now > salesCloseDateTime;
         }
@@ -162,15 +180,34 @@ export default function AccountPage({
   };
 
   const getFilteredTickets = () => {
-    if (ticketFilter === 'all') return userTickets;
-    return userTickets.filter(ticket => {
-      const { isUsed, isExpired, isReselling } = getTicketStatus(ticket);
-      if (ticketFilter === 'active') return !isExpired && !isUsed;   // còn hạn
-      if (ticketFilter === 'expired') return isExpired && !isUsed;   // event đã qua, chưa bị used
-      if (ticketFilter === 'used') return isUsed;                    // có status used (hiện chưa có trong DB)
-      return true;
+    let list = userTickets;
+    if (ticketFilter !== 'all') {
+      list = userTickets.filter(ticket => {
+        const { isUsed, isExpired, isReselling } = getTicketStatus(ticket);
+        if (ticketFilter === 'active') return !isExpired && !isUsed;   // còn hạn
+        if (ticketFilter === 'expired') return isExpired && !isUsed;   // event đã qua, chưa bị used
+        if (ticketFilter === 'used') return isUsed;                    // có status used (hiện chưa có trong DB)
+        return true;
+      });
+    }
+
+    return [...list].sort((a, b) => {
+      const statusA = getTicketStatus(a);
+      const statusB = getTicketStatus(b);
+
+      const isAActive = !statusA.isExpired && !statusA.isUsed;
+      const isBActive = !statusB.isExpired && !statusB.isUsed;
+
+      if (isAActive && !isBActive) return -1; // a lên trước
+      if (!isAActive && isBActive) return 1;  // b lên trước
+
+      // Nếu cùng nhóm (cùng còn hạn hoặc cùng hết hạn), sắp xếp theo ngày mua giảm dần (mới nhất lên đầu)
+      const timeA = new Date(a.createdAt || 0).getTime();
+      const timeB = new Date(b.createdAt || 0).getTime();
+      return timeB - timeA;
     });
   };
+
   const filteredTickets = getFilteredTickets();
 
   const handleResaleSubmit = async () => {
@@ -184,7 +221,7 @@ export default function AccountPage({
       });
       const data = await res.json();
       if (!res.ok) { await showAlert(data.error || 'Đăng bán thất bại'); return; }
-      setResalePending(null); 
+      setResalePending(null);
       setResalePrice('');
       await showAlert(`Đăng bán thành công với giá ${fmt(priceNum)}!`);
       if (fetchUserTickets) await fetchUserTickets(currentUser.id);
@@ -348,8 +385,17 @@ export default function AccountPage({
             priceRange: evtEventType === 'online' ? `${Number(evtOnlinePrice).toLocaleString('vi-VN')}đ` : evtPriceRange,
             image: evtImage, badge: evtBadge, theme: evtTheme,
             zones: evtEventType === 'online'
-              ? [{ id: `zone-online-${Date.now()}`, name: 'Vé tham dự trực tuyến', price: Number(evtOnlinePrice) || 0, isStanding: true, availableTickets: Number(evtOnlineCapacity) || 100, rows: null, cols: null }]
+              ? [{ 
+                  id: (editingEvt && editingEvt.zones && editingEvt.zones[0]) ? editingEvt.zones[0].id : `zone-online-${Date.now()}`, 
+                  name: 'Vé tham dự trực tuyến', 
+                  price: Number(evtOnlinePrice) || 0, 
+                  isStanding: true, 
+                  availableTickets: Number(evtOnlineCapacity) || 100, 
+                  rows: null, 
+                  cols: null 
+                }]
               : normalizeZones(evtZones),
+
             organizerId: currentUser.id,
             status: isEdit ? editingEvt.status : 'pending',
             eventType: evtEventType,
@@ -557,7 +603,6 @@ export default function AccountPage({
               })}
             </div>
           )}
-
           {userTickets.length === 0 ? (
             <div className="glass-panel" style={{ padding: '64px', textAlign: 'center', color: 'var(--text-muted)' }}>
               <Ticket size={40} style={{ margin: '0 auto 16px', display: 'block', opacity: 0.3 }} />
@@ -571,8 +616,9 @@ export default function AccountPage({
           ) : (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
               {filteredTickets.map(ticket => {
-                const { isUsed, isExpired, isReselling } = getTicketStatus(ticket);
+                const { isUsed, isExpired, isSalesClosed, isReselling } = getTicketStatus(ticket);
                 const isExpanded = expandedTicket === ticket.id;
+
 
                 // Badge
                 let badgeBg = 'var(--brand-emerald)';
@@ -633,7 +679,7 @@ export default function AccountPage({
                     {isExpanded && (
                       <div style={{ borderTop: '1px solid var(--ticket-divider)', padding: '16px', background: 'var(--ticket-body-bg)' }}>
                         {/* QR area */}
-                        <div 
+                        <div
                           onClick={() => setActiveQrTicket(ticket)}
                           style={{
                             padding: '14px', background: 'var(--ticket-qr-bg)', borderRadius: '8px',
@@ -657,7 +703,7 @@ export default function AccountPage({
                           {[
                             ['Mã vé', ticket.id],
                             ['Sự kiện', ticket.eventTitle],
-                            ['Thời gian', `${ticket.eventTime || ''}${ticket.eventEndTime ? ` - ${ticket.eventEndTime}` : ''}${ticket.eventDate ? `, ${ticket.eventDate}` : ''}`],
+                            ['Thời gian', `${ticket.eventTime || ''}${ticket.eventEndTime ? ` - ${ticket.eventEndTime}` : ''}${ticket.eventDate ? `, ${formatDate(ticket.eventDate)}` : ''}`],
                             ['Địa điểm', ticket.eventLocation || ''],
                             ['Khu vực', ticket.zoneName],
                             ticket.eventType === 'online'
@@ -895,21 +941,21 @@ export default function AccountPage({
                     alignItems: 'center',
                     gap: '8px'
                   }}>
-                    <img 
-                      src={qrCodeUrl} 
-                      alt="Check-in QR" 
+                    <img
+                      src={qrCodeUrl}
+                      alt="Check-in QR"
                       style={{ width: '180px', height: '180px' }}
                     />
-                    <span style={{ 
-                      fontSize: '9.5px', 
-                      fontFamily: 'var(--font-mono)', 
-                      fontWeight: 700, 
-                      color: '#0b0b0f', 
-                      borderTop: '1px dashed #ddd', 
-                      width: '100%', 
-                      textAlign: 'center', 
-                      paddingTop: '6px', 
-                      letterSpacing: '0.08em' 
+                    <span style={{
+                      fontSize: '9.5px',
+                      fontFamily: 'var(--font-mono)',
+                      fontWeight: 700,
+                      color: '#0b0b0f',
+                      borderTop: '1px dashed #ddd',
+                      width: '100%',
+                      textAlign: 'center',
+                      paddingTop: '6px',
+                      letterSpacing: '0.08em'
                     }}>
                       {(activeQrTicket.id || '').toUpperCase()}
                     </span>
@@ -1226,10 +1272,10 @@ export default function AccountPage({
               </div>
 
               {evtEventType !== 'online' && (
-              <div>
-                <label style={labelSt}>Khoảng giá hiển thị *</label>
-                <input style={inputSt} value={evtPriceRange} onChange={e => setEvtPriceRange(e.target.value)} placeholder="VD: 500.000đ - 1.500.000đ" />
-              </div>
+                <div>
+                  <label style={labelSt}>Khoảng giá hiển thị *</label>
+                  <input style={inputSt} value={evtPriceRange} onChange={e => setEvtPriceRange(e.target.value)} placeholder="VD: 500.000đ - 1.500.000đ" />
+                </div>
               )}
 
               {/* Event type */}

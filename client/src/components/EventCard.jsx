@@ -1,7 +1,13 @@
-import React from 'react';
 import { Monitor, Users } from 'lucide-react';
 
+const isEventSoldOut = (event) => {
+  if (!event || !event.zones || event.zones.length === 0) return false;
+  const totalAvailable = event.zones.reduce((sum, zone) => sum + (Number(zone.availableTickets) || 0), 0);
+  return totalAvailable <= 0;
+};
+
 export default function EventCard({ event, isFeatured, onClick }) {
+
   const getCategoryConfig = (cat) => {
     switch (cat) {
       case 'music': return {
@@ -31,37 +37,38 @@ export default function EventCard({ event, isFeatured, onClick }) {
       default: return {
         border: 'rgba(255, 255, 255, 0.12)',
         borderHover: 'rgba(255, 255, 255, 0.5)',
-        text: 'var(--brand-pearl)',
+        text: 'var(--brand-gold)',
         bg: 'rgba(255, 255, 255, 0.08)',
         glow: 'rgba(255, 255, 255, 0.1)',
         label: 'SỰ KIỆN ĐẶC BIỆT'
       };
+
     }
   };
 
   const config = getCategoryConfig(event.category);
 
-  // Định dạng ngày ngắn (ví dụ: 28/08/2026 -> 28 Thg 8 2026)
+  // Định dạng ngày ngắn (ví dụ: 28/08/2026 -> 28-08-2026)
   const getShortDate = (str) => {
     try {
       if (!str) return 'TBA';
       if (str.includes('Hằng Ngày')) return 'VÉ HÀNG NGÀY';
       
-      const months = ['Thg 1', 'Thg 2', 'Thg 3', 'Thg 4', 'Thg 5', 'Thg 6', 'Thg 7', 'Thg 8', 'Thg 9', 'Thg 10', 'Thg 11', 'Thg 12'];
-      
       // Hỗ trợ định dạng YYYY-MM-DD
       if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
-        const [year, month, day] = str.split('T')[0].split('-').map(Number);
-        return `${String(day).padStart(2, '0')} ${months[month - 1]} ${year}`;
+        const [year, month, day] = str.split('T')[0].split('-').map(String);
+        return `${day.padStart(2, '0')}-${month.padStart(2, '0')}-${year}`;
       }
       
-      const cleanStr = str.replace(/Tháng\s+/i, '').replace(',', '');
+      const cleanStr = str.replace(/Tháng\s*/i, '').replace(',', '');
       const parts = cleanStr.split(/\s+/);
-      const day = parts[0];
-      const monthIndex = parseInt(parts[1], 10);
-      const year = parts[2] || '2026';
-      const month = months[monthIndex - 1] || parts[1];
-      return `${day} ${month} ${year}`;
+      if (parts.length >= 3) {
+        const day = parts[0].padStart(2, '0');
+        const month = parts[1].padStart(2, '0');
+        const year = parts[2] || '2026';
+        return `${day}-${month}-${year}`;
+      }
+      return str;
     } catch (e) {
       return str.toUpperCase();
     }
@@ -81,10 +88,18 @@ export default function EventCard({ event, isFeatured, onClick }) {
       .toUpperCase();
   };
 
-  const formatPriceNum = (priceRange) => {
-    const primaryPrice = priceRange.split(' ')[0];
-    return primaryPrice.toUpperCase();
+  const formatEventPrice = (priceRange) => {
+    if (!priceRange) return 'TBA';
+    const clean = priceRange.trim();
+    const firstPart = clean.split(/\s*-\s*/)[0].split(' ')[0];
+    const numStr = firstPart.replace(/[^0-9]/g, '');
+    if (numStr) {
+      const num = parseInt(numStr, 10);
+      return new Intl.NumberFormat('vi-VN').format(num) + 'đ';
+    }
+    return clean;
   };
+
 
   if (isFeatured) {
     return (
@@ -341,15 +356,44 @@ export default function EventCard({ event, isFeatured, onClick }) {
                 {event.eventType === 'online' ? 'ĐỊA CHỈ WEB' : 'ĐỊA ĐIỂM'} • <strong>{event.eventType === 'online' ? 'TRỰC TUYẾN' : getShortVenue(event.location)}</strong>
               </span>
               <span className="banner-ticket-pill" style={{ borderColor: config.border, background: 'rgba(255,255,255,0.01)' }}>
-                GIÁ VÉ • <strong style={{ color: config.text }}>{formatPriceNum(event.priceRange)}</strong>
+                GIÁ VÉ • <strong style={{ color: config.text }}>{formatEventPrice(event.priceRange)}</strong>
               </span>
+
             </div>
 
-            <button className="banner-btn-action" onClick={(e) => { e.stopPropagation(); onClick?.(); }}>
-              Mua Vé & Chọn Ghế &nbsp;⟶
-            </button>
+            {(() => {
+              const isSoldOut = isEventSoldOut(event);
+              return (
+                isSoldOut ? (
+                  <div style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    border: '1px solid var(--brand-rose)',
+                    background: 'rgba(244,63,94,0.06)',
+                    color: 'var(--brand-rose)',
+                    fontFamily: 'var(--font-mono)',
+                    fontWeight: 700,
+                    fontSize: '11px',
+                    textTransform: 'uppercase',
+                    letterSpacing: '1.5px',
+                    padding: '12px 24px',
+                    borderRadius: '8px',
+                    boxShadow: '0 0 10px rgba(244,63,94,0.15)',
+                    width: 'fit-content'
+                  }}>
+                    ✗ ĐÃ HẾT VÉ
+                  </div>
+                ) : (
+                  <button className="banner-btn-action" onClick={(e) => { e.stopPropagation(); onClick?.(); }}>
+                    Mua Vé & Chọn Ghế &nbsp;⟶
+                  </button>
+                )
+              );
+            })()}
           </div>
         </div>
+
 
         <div className="event-cat-badge" style={{
           position: 'absolute',
@@ -389,7 +433,30 @@ export default function EventCard({ event, isFeatured, onClick }) {
             backdropFilter: 'blur(4px)'
           }}>🪑 WORKSHOP</div>
         )}
+        {isEventSoldOut(event) && (
+          <div style={{
+            position: 'absolute',
+            top: '20px',
+            left: event.eventType === 'online' || event.eventType === 'workshop' ? '120px' : '20px',
+            zIndex: 5,
+            backgroundColor: 'var(--brand-rose)',
+            border: '1px solid var(--brand-rose)',
+            color: '#fff',
+            fontSize: '9px',
+            fontWeight: 700,
+            padding: '4px 10px',
+            borderRadius: '4px',
+            fontFamily: 'var(--font-mono)',
+            textTransform: 'uppercase',
+            letterSpacing: '1px',
+            boxShadow: '0 0 10px rgba(244,63,94,0.5)',
+            backdropFilter: 'blur(4px)'
+          }}>
+            ✗ HẾT VÉ
+          </div>
+        )}
       </div>
+
     );
   }
 
@@ -598,7 +665,30 @@ export default function EventCard({ event, isFeatured, onClick }) {
             backdropFilter: 'blur(4px)'
           }}><Users size={9} strokeWidth={2.5} /> WORKSHOP</div>
         )}
+        {isEventSoldOut(event) && (
+          <div style={{
+            position: 'absolute',
+            top: '12px',
+            left: event.eventType === 'online' || event.eventType === 'workshop' ? '110px' : '12px',
+            zIndex: 3,
+            backgroundColor: 'var(--brand-rose)',
+            border: '1px solid var(--brand-rose)',
+            color: '#fff',
+            fontSize: '8px',
+            fontWeight: 700,
+            padding: '3px 8px',
+            borderRadius: '4px',
+            fontFamily: 'var(--font-mono)',
+            textTransform: 'uppercase',
+            letterSpacing: '1px',
+            boxShadow: '0 0 8px rgba(244,63,94,0.4)',
+            backdropFilter: 'blur(4px)'
+          }}>
+            ✗ HẾT VÉ
+          </div>
+        )}
       </div>
+
 
       <div className="bento-card-content">
         <h3 className="bento-card-title">
@@ -624,16 +714,38 @@ export default function EventCard({ event, isFeatured, onClick }) {
           <div className="normal-info-row" style={{ borderBottom: 'none', paddingBottom: 0 }}>
             <span className="normal-info-label">GIÁ VÉ</span>
             <span className="normal-info-value" style={{ color: config.text, fontWeight: 700 }}>
-              {event.priceRange.split(' ')[0]}
+              {formatEventPrice(event.priceRange)}
             </span>
           </div>
+
         </div>
 
         <div style={{ marginTop: 'auto', paddingTop: '14px', borderTop: '1px solid rgba(255, 255, 255, 0.05)' }}>
-          <button className="bento-card-btn-action" onClick={(e) => { e.stopPropagation(); onClick?.(); }}>
-            Mua Vé & Chọn Ghế &nbsp;⟶
-          </button>
+          {isEventSoldOut(event) ? (
+            <div style={{
+              width: '100%',
+              padding: '12px',
+              borderRadius: '8px',
+              border: '1px solid var(--brand-rose)',
+              background: 'rgba(244,63,94,0.06)',
+              color: 'var(--brand-rose)',
+              fontFamily: 'var(--font-mono)',
+              fontWeight: 700,
+              fontSize: '11px',
+              textTransform: 'uppercase',
+              letterSpacing: '1px',
+              textAlign: 'center',
+              boxShadow: '0 0 8px rgba(244,63,94,0.1)'
+            }}>
+              ✗ ĐÃ HẾT VÉ
+            </div>
+          ) : (
+            <button className="bento-card-btn-action" onClick={(e) => { e.stopPropagation(); onClick?.(); }}>
+              Mua Vé & Chọn Ghế &nbsp;⟶
+            </button>
+          )}
         </div>
+
       </div>
     </div>
   );

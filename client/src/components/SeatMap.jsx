@@ -72,6 +72,24 @@ const calculateDuration = (startTime, endTime) => {
   }
 };
 
+const formatDate = (dateStr) => {
+  if (!dateStr) return '';
+  if (dateStr.includes('Hằng Ngày')) return 'VÉ HÀNG NGÀY';
+  if (/^\d{4}-\d{2}-\d{2}/.test(dateStr)) {
+    const [year, month, day] = dateStr.split('T')[0].split('-').map(String);
+    return `${day.padStart(2, '0')}-${month.padStart(2, '0')}-${year}`;
+  }
+  const cleanStr = dateStr.replace(/Tháng\s*/i, '').replace(',', '');
+  const parts = cleanStr.split(/\s+/);
+  if (parts.length >= 3) {
+    const day = parts[0].padStart(2, '0');
+    const month = parts[1].padStart(2, '0');
+    const year = parts[2];
+    return `${day}-${month}-${year}`;
+  }
+  return dateStr;
+};
+
 export default function SeatMap({ event, onBack, onProceedCheckout, showAlert }) {
   console.log('[SeatMap] eventType:', event?.eventType, '| id:', event?.id, '| title:', event?.title);
   const normalizedZones = normalizeSeatZones(event.zones || []);
@@ -241,7 +259,7 @@ export default function SeatMap({ event, onBack, onProceedCheckout, showAlert })
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Calendar size={14} style={{ color: 'var(--brand-cyan)', flexShrink: 0 }} />
                 <span style={{ fontWeight: 600, color: 'var(--text-muted)', marginRight: '4px' }}>Ngày diễn ra:</span>
-                <span>{event.date}</span>
+                <span>{formatDate(event.date)}</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Clock size={14} style={{ color: 'var(--brand-cyan)', flexShrink: 0 }} />
@@ -291,20 +309,49 @@ export default function SeatMap({ event, onBack, onProceedCheckout, showAlert })
 
         {/* Quantity + proceed */}
         <div className="glass-panel" style={{ padding: '24px' }}>
-          <div style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', letterSpacing: '0.08em', marginBottom: '16px' }}>SỐ LƯỢNG VÉ</div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '20px' }}>
-            <button
-              onClick={handleStandingDecrement}
-              style={{ width: '36px', height: '36px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.04)', color: 'var(--text-primary)', fontSize: '18px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }}
-            >−</button>
-            <span style={{ fontSize: '24px', fontWeight: 700, fontFamily: 'var(--font-mono)', color: 'var(--text-primary)', minWidth: '32px', textAlign: 'center' }}>{onlineCount}</span>
-            <button
-              onClick={handleStandingIncrement}
-              style={{ width: '36px', height: '36px', borderRadius: '8px', border: '1px solid var(--brand-cyan)', background: 'rgba(0,255,255,0.08)', color: 'var(--brand-cyan)', fontSize: '18px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }}
-            >+</button>
-            <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>vé (tối đa 6)</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <span style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', letterSpacing: '0.08em' }}>SỐ LƯỢNG VÉ</span>
+            <span style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: 'var(--brand-cyan)' }}>
+              Vé còn lại: <strong style={{ color: (selectedZone?.availableTickets || 0) <= 0 ? 'var(--brand-rose)' : 'var(--text-primary)' }}>{selectedZone?.availableTickets || 0}</strong> vé
+            </span>
           </div>
+
+
+          {(selectedZone?.availableTickets || 0) <= 0 ? (
+            <div style={{
+              padding: '12px 24px',
+              borderRadius: '8px',
+              border: '1.5px solid var(--brand-rose)',
+              background: 'rgba(244,63,94,0.1)',
+              color: 'var(--brand-rose)',
+              fontWeight: 700,
+              fontSize: '13px',
+              fontFamily: 'var(--font-mono)',
+              letterSpacing: '0.08em',
+              boxShadow: '0 0 12px rgba(244,63,94,0.2)',
+              textTransform: 'uppercase',
+              textAlign: 'center',
+              marginBottom: '20px'
+            }}>
+              ✗ ĐÃ HẾT VÉ
+            </div>
+          ) : (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '20px' }}>
+              <button
+                onClick={handleStandingDecrement}
+                disabled={standingCount === 0}
+                style={{ width: '36px', height: '36px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.04)', color: 'var(--text-primary)', fontSize: '18px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }}
+              >−</button>
+              <span style={{ fontSize: '24px', fontWeight: 700, fontFamily: 'var(--font-mono)', color: 'var(--text-primary)', minWidth: '32px', textAlign: 'center' }}>{onlineCount}</span>
+              <button
+                onClick={handleStandingIncrement}
+                disabled={onlineCount >= 6 || onlineCount >= (selectedZone?.availableTickets || 0)}
+                style={{ width: '36px', height: '36px', borderRadius: '8px', border: '1px solid var(--brand-cyan)', background: 'rgba(0,255,255,0.08)', color: 'var(--brand-cyan)', fontSize: '18px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }}
+              >+</button>
+              <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>vé (tối đa 6)</span>
+            </div>
+          )}
+
 
           {/* Info box */}
           <div style={{ padding: '12px 14px', borderRadius: '8px', background: 'rgba(0,255,255,0.05)', border: '1px solid rgba(0,255,255,0.15)', marginBottom: '20px', fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.6 }}>
@@ -474,7 +521,7 @@ export default function SeatMap({ event, onBack, onProceedCheckout, showAlert })
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <Calendar size={14} style={{ color: 'var(--brand-cyan)', flexShrink: 0 }} />
                   <span style={{ fontWeight: 600, color: 'var(--text-muted)', marginRight: '4px' }}>Ngày diễn ra:</span>
-                  <span>{event.date}</span>
+                  <span>{formatDate(event.date)}</span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <Clock size={14} style={{ color: 'var(--brand-cyan)', flexShrink: 0 }} />
@@ -536,12 +583,34 @@ export default function SeatMap({ event, onBack, onProceedCheckout, showAlert })
                     </button>
                   ))}
                 </div>
-                {selectedZone?.isStanding && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px', justifyContent: 'center', marginTop: '16px' }}>
-                    <button onClick={handleStandingDecrement} style={{ width: 36, height: 36, borderRadius: '8px', border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.04)', color: 'var(--text-primary)', fontSize: '18px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>−</button>
-                    <span style={{ fontSize: '22px', fontWeight: 700, fontFamily: 'var(--font-mono)', color: 'var(--text-primary)', minWidth: '28px', textAlign: 'center' }}>{standingCount}</span>
-                    <button onClick={handleStandingIncrement} style={{ width: 36, height: 36, borderRadius: '8px', border: '1px solid var(--brand-cyan)', background: 'rgba(0,255,255,0.08)', color: 'var(--brand-cyan)', fontSize: '18px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>+</button>
-                  </div>
+                 {selectedZone?.isStanding && (
+                  (selectedZone?.availableTickets || 0) <= 0 ? (
+                    <div style={{
+                      padding: '10px 24px',
+                      borderRadius: '8px',
+                      border: '1.5px solid var(--brand-rose)',
+                      background: 'rgba(244,63,94,0.1)',
+                      color: 'var(--brand-rose)',
+                      fontWeight: 700,
+                      fontSize: '12px',
+                      fontFamily: 'var(--font-mono)',
+                      letterSpacing: '0.08em',
+                      boxShadow: '0 0 10px rgba(244,63,94,0.2)',
+                      textTransform: 'uppercase',
+                      textAlign: 'center',
+                      marginTop: '16px',
+                      maxWidth: '180px',
+                      margin: '16px auto 0 auto'
+                    }}>
+                      ✗ ĐÃ HẾT VÉ
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px', justifyContent: 'center', marginTop: '16px' }}>
+                      <button onClick={handleStandingDecrement} style={{ width: 36, height: 36, borderRadius: '8px', border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.04)', color: 'var(--text-primary)', fontSize: '18px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>−</button>
+                      <span style={{ fontSize: '22px', fontWeight: 700, fontFamily: 'var(--font-mono)', color: 'var(--text-primary)', minWidth: '28px', textAlign: 'center' }}>{standingCount}</span>
+                      <button onClick={handleStandingIncrement} disabled={standingCount >= 6 || standingCount >= (selectedZone?.availableTickets || 0)} style={{ width: 36, height: 36, borderRadius: '8px', border: '1px solid var(--brand-cyan)', background: 'rgba(0,255,255,0.08)', color: 'var(--brand-cyan)', fontSize: '18px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>+</button>
+                    </div>
+                  )
                 )}
               </div>
             )}
@@ -568,7 +637,7 @@ export default function SeatMap({ event, onBack, onProceedCheckout, showAlert })
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', paddingBottom: '12px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
               {[
                 { label: 'Sự kiện:', value: event.title },
-                { label: 'Thời gian:', value: `${event.time || ''}${event.endTime ? ` - ${event.endTime}` : ''}${event.date ? `, ${event.date}` : ''}` },
+                { label: 'Thời gian:', value: `${event.time || ''}${event.endTime ? ` - ${event.endTime}` : ''}${event.date ? `, ${formatDate(event.date)}` : ''}` },
                 { label: 'Địa điểm:', value: event.location || '—' },
                 { label: 'Bàn:', value: wsSelectedZoneNames.length > 0 ? wsSelectedZoneNames.join(', ') : '—' },
                 { label: 'Đơn giá / ghế:', value: formatPrice(selectedZone?.price || 0), cyan: true },
@@ -1312,7 +1381,7 @@ export default function SeatMap({ event, onBack, onProceedCheckout, showAlert })
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Calendar size={14} color="var(--brand-cyan)" style={{ flexShrink: 0 }} />
-                <span><strong>Ngày diễn ra:</strong> {event.date}</span>
+                <span><strong>Ngày diễn ra:</strong> {formatDate(event.date)}</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Clock size={14} color="var(--brand-cyan)" style={{ flexShrink: 0 }} />
@@ -1386,29 +1455,46 @@ export default function SeatMap({ event, onBack, onProceedCheckout, showAlert })
             <Armchair size={40} color="var(--brand-cyan)" style={{ marginBottom: '20px', opacity: 0.8 }} />
             <h3 style={{ fontSize: '18px', fontFamily: 'var(--font-display)', color: 'var(--brand-pearl)', marginBottom: '6px' }}>Vé Đứng GA (Tự Do)</h3>
             <p style={{ fontSize: '13.5px', color: 'var(--text-muted)', marginBottom: '28px', textAlign: 'center', maxWidth: '360px', lineHeight: '1.5' }}>
-              Vị trí đứng tự do trong khu vực phòng vé. Vé còn lại: <strong style={{ color: 'var(--brand-pearl)' }}>{selectedZone.availableTickets}</strong> vé.
+              Vị trí đứng tự do trong khu vực phòng vé. Vé còn lại: <strong style={{ color: selectedZone.availableTickets <= 0 ? 'var(--brand-rose)' : 'var(--brand-pearl)' }}>{selectedZone.availableTickets}</strong> vé.
             </p>
 
-
-            <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
-              <button
-                onClick={handleStandingDecrement}
-                disabled={standingCount === 0}
-                className="counter-btn"
-              >
-                -
-              </button>
-              <span style={{ fontSize: '28px', fontFamily: 'var(--font-mono)', fontWeight: 700, width: '40px', textAlign: 'center', color: 'var(--brand-pearl)' }}>
-                {standingCount}
-              </span>
-              <button
-                onClick={handleStandingIncrement}
-                disabled={standingCount >= 6}
-                className="counter-btn"
-              >
-                +
-              </button>
-            </div>
+            {selectedZone.availableTickets <= 0 ? (
+              <div style={{
+                padding: '12px 36px',
+                borderRadius: '8px',
+                border: '1.5px solid var(--brand-rose)',
+                background: 'rgba(244,63,94,0.1)',
+                color: 'var(--brand-rose)',
+                fontWeight: 700,
+                fontSize: '14px',
+                fontFamily: 'var(--font-mono)',
+                letterSpacing: '0.1em',
+                boxShadow: '0 0 15px rgba(244,63,94,0.25)',
+                textTransform: 'uppercase'
+              }}>
+                ✗ ĐÃ HẾT VÉ
+              </div>
+            ) : (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
+                <button
+                  onClick={handleStandingDecrement}
+                  disabled={standingCount === 0}
+                  className="counter-btn"
+                >
+                  -
+                </button>
+                <span style={{ fontSize: '28px', fontFamily: 'var(--font-mono)', fontWeight: 700, width: '40px', textAlign: 'center', color: 'var(--brand-pearl)' }}>
+                  {standingCount}
+                </span>
+                <button
+                  onClick={handleStandingIncrement}
+                  disabled={standingCount >= 6 || standingCount >= selectedZone.availableTickets}
+                  className="counter-btn"
+                >
+                  +
+                </button>
+              </div>
+            )}
           </div>
           ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', zIndex: 2, position: 'relative' }}>

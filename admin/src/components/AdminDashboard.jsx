@@ -876,6 +876,9 @@ export default function AdminDashboard({
       return;
     }
 
+    const originalEvent = editingEventId !== 'new' ? events.find(ev => ev.id === editingEventId) : null;
+    const originalOnlineZone = originalEvent?.eventType === 'online' ? originalEvent.zones?.[0] : null;
+
     const payload = {
       title: eventTitle,
       category: eventCategory,
@@ -891,8 +894,17 @@ export default function AdminDashboard({
       isFeatured: eventIsFeatured,
       isTrending: eventIsTrending,
       zones: eventEventType === 'online'
-        ? [{ id: `zone-online-${Date.now()}`, name: 'Vé tham dự trực tuyến', price: Number(eventOnlinePrice) || 0, isStanding: true, availableTickets: Number(eventOnlineCapacity) || 100, rows: null, cols: null }]
+        ? [{ 
+            id: originalOnlineZone ? originalOnlineZone.id : ((editingEventId !== 'new' && eventZones && eventZones.length > 0 && eventZones[0]) ? eventZones[0].id : `zone-online-${Date.now()}`), 
+            name: 'Vé tham dự trực tuyến', 
+            price: Number(eventOnlinePrice) || 0, 
+            isStanding: true, 
+            availableTickets: Number(eventOnlineCapacity) || 100, 
+            rows: null, 
+            cols: null 
+          }]
         : eventZones,
+
       creatorId: eventCreatorId || null,
       eventType: eventEventType,
       onlineLink: eventEventType === 'online' ? eventOnlineLink : null,

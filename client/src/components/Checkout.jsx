@@ -86,6 +86,24 @@ export default function Checkout({ bookingData, onBack, onComplete, showAlert, c
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(price);
   };
 
+  const formatDate = (dateStr) => {
+    if (!dateStr) return '';
+    if (dateStr.includes('Hằng Ngày')) return 'VÉ HÀNG NGÀY';
+    if (/^\d{4}-\d{2}-\d{2}/.test(dateStr)) {
+      const [year, month, day] = dateStr.split('T')[0].split('-').map(String);
+      return `${day.padStart(2, '0')}-${month.padStart(2, '0')}-${year}`;
+    }
+    const cleanStr = dateStr.replace(/Tháng\s*/i, '').replace(',', '');
+    const parts = cleanStr.split(/\s+/);
+    if (parts.length >= 3) {
+      const day = parts[0].padStart(2, '0');
+      const month = parts[1].padStart(2, '0');
+      const year = parts[2];
+      return `${day}-${month}-${year}`;
+    }
+    return dateStr;
+  };
+
 
   const displayTicketId = createdTicketId || `AP-${Math.floor(100000 + Math.random() * 900000)}`;
 
@@ -360,7 +378,7 @@ export default function Checkout({ bookingData, onBack, onComplete, showAlert, c
             
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', paddingBottom: '16px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
               <span style={{ fontWeight: 700, color: 'var(--text-white)', fontFamily: 'var(--font-display)', fontSize: '15px' }}>{event.title}</span>
-              <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{event.date} · {event.time}</span>
+              <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{formatDate(event.date)} · {event.time}</span>
               <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
                 {event.eventType === 'online' ? 'Mua vé để xem địa chỉ' : event.location.split(',')[0]}
               </span>
@@ -637,7 +655,7 @@ export default function Checkout({ bookingData, onBack, onComplete, showAlert, c
                     <div>
                       <span style={{ fontSize: '10.5px', color: 'var(--text-muted)', textTransform: 'uppercase', fontFamily: 'var(--font-mono)', letterSpacing: '0.05em' }}>Thời Gian</span>
                       <div style={{ fontSize: '13.5px', fontWeight: 600, color: 'var(--brand-pearl)', marginTop: '4px', lineHeight: '1.4' }}>
-                        {event.date}<br />{event.time}
+                        {formatDate(event.date)}<br />{event.time}
                       </div>
                     </div>
                     <div>
