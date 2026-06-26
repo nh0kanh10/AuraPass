@@ -5,6 +5,23 @@ import spotlightBg from '../assets/spotlight-bg.png';
 
 const isLightTheme = () => document.documentElement.dataset.theme === 'light';
 
+const translateBadge = (badge) => {
+  if (!badge) return '';
+  const mapping = {
+    'hot show': 'SHOW CỰC HOT',
+    'holographic ticket': 'VÉ HOLOGRAM',
+    'classic play': 'KỊCH KINH ĐIỂN',
+    'art walk': 'TRIỂN LÃM NGHỆ THUẬT',
+    'selling fast': 'BÁN CHẠY',
+    'free access': 'MIỄN PHÍ VÀO CỬA',
+    'hot': 'HOT',
+    'limited': 'GIỚI HẠN',
+    'exclusive': 'ĐỘC QUYỀN',
+    'new': 'MỚI'
+  };
+  return mapping[badge.toLowerCase()] || badge.toUpperCase();
+};
+
 export default function SpotlightEvents({ events, onBookClick }) {
   const [revealRef, isVisible] = useScrollReveal(0.06, '0px 0px -40px 0px');
   const scrollRef = useRef(null);
@@ -23,7 +40,8 @@ export default function SpotlightEvents({ events, onBookClick }) {
   const dragOccurred = useRef(false);
 
   const spotlightEvents = (events || []).filter(e => e.isFeatured);
-  const isStatic = spotlightEvents.length < 4;
+  const isStatic = spotlightEvents.length < 2;
+  const singleCycleWidth = spotlightEvents.length * 312;
   const multipliedEvents = isStatic ? spotlightEvents : [...spotlightEvents, ...spotlightEvents, ...spotlightEvents];
 
   useEffect(() => {
@@ -36,16 +54,15 @@ export default function SpotlightEvents({ events, onBookClick }) {
       }
     }
     if (scrollRef.current && !isStatic) {
-      scrollRef.current.scrollLeft = 1560;
+      scrollRef.current.scrollLeft = singleCycleWidth;
     }
-  }, [events, isStatic]);
+  }, [events, isStatic, singleCycleWidth]);
 
   useEffect(() => {
     const container = scrollRef.current;
     if (!container || spotlightEvents.length === 0 || isStatic) return;
 
     let lastTimeStep = performance.now();
-    const singleCycleWidth = 1560;
 
     const step = (time) => {
       if (autoScrollActive.current && !isDown.current) {
@@ -63,7 +80,7 @@ export default function SpotlightEvents({ events, onBookClick }) {
 
     animationFrameId.current = requestAnimationFrame(step);
     return () => cancelAnimationFrame(animationFrameId.current);
-  }, [spotlightEvents.length, isStatic]);
+  }, [spotlightEvents.length, isStatic, singleCycleWidth]);
 
   const handleScroll = () => {
   };
@@ -102,7 +119,6 @@ export default function SpotlightEvents({ events, onBookClick }) {
     const walk = (x - startX.current) * 1.5;
     slider.scrollLeft = scrollLeftStart.current - walk;
 
-    const singleCycleWidth = 1560;
     if (slider.scrollLeft >= singleCycleWidth * 2) {
       slider.scrollLeft -= singleCycleWidth;
       startX.current += singleCycleWidth / 1.5;
@@ -140,7 +156,6 @@ export default function SpotlightEvents({ events, onBookClick }) {
         slider.scrollLeft -= currentVelocity;
         currentVelocity *= friction;
 
-        const singleCycleWidth = 1560;
         if (slider.scrollLeft >= singleCycleWidth * 2) {
           slider.scrollLeft -= singleCycleWidth;
         } else if (slider.scrollLeft <= 500) {
@@ -200,7 +215,6 @@ export default function SpotlightEvents({ events, onBookClick }) {
     const walk = (x - startX.current) * 1.5;
     slider.scrollLeft = scrollLeftStart.current - walk;
 
-    const singleCycleWidth = 1560;
     if (slider.scrollLeft >= singleCycleWidth * 2) {
       slider.scrollLeft -= singleCycleWidth;
       startX.current += singleCycleWidth / 1.5;
@@ -312,7 +326,7 @@ export default function SpotlightEvents({ events, onBookClick }) {
               display: 'block',
               marginBottom: '4px'
             }}>
-              RECOMMENDED SHOWS
+              SỰ KIỆN ĐỀ XUẤT
             </span>
             <h2 className="spotlight-section-title">
               Sự Kiện Nổi Bật
@@ -396,7 +410,7 @@ export default function SpotlightEvents({ events, onBookClick }) {
                   <div className="spotlight-holographic-sheen" />
 
                   <div className="spotlight-badge">
-                    {event.badge || 'Hot'}
+                    {translateBadge(event.badge || 'Hot')}
                   </div>
 
                   <div className="spotlight-image-container">
@@ -425,7 +439,7 @@ export default function SpotlightEvents({ events, onBookClick }) {
 
                       <div className="spotlight-card-location">
                         <MapPin size={12} />
-                        <span>{event.location.split(',')[0]}</span>
+                        <span>{event.eventType === 'online' ? 'Trực tuyến' : event.location.split(',')[0]}</span>
                       </div>
                     </div>
 

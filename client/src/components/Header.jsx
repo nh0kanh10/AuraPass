@@ -2829,8 +2829,12 @@ export default function Header({
                   </div>
 
                   <div className="detail-field-group">
-                    <span className="detail-field-label">Địa điểm tổ chức</span>
-                    <span className="detail-field-value">{viewingEvent.location}</span>
+                    <span className="detail-field-label">
+                      {viewingEvent.eventType === 'online' ? 'Địa chỉ web' : 'Địa điểm tổ chức'}
+                    </span>
+                    <span className="detail-field-value">
+                      {viewingEvent.eventType === 'online' ? 'Mua vé để xem địa chỉ' : viewingEvent.location}
+                    </span>
                   </div>
 
                   {viewingEvent.description && (

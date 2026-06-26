@@ -1,5 +1,48 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 const isLight = () => document.documentElement.dataset.theme === 'light';
+
+const isEventExpired = (dateStr, timeStr) => {
+  if (!dateStr) return false;
+  const now = new Date();
+
+  try {
+    let year, month, day;
+
+    if (/^\d{4}-\d{2}-\d{2}/.test(dateStr)) {
+      const [y, m, d] = dateStr.split('T')[0].split('-').map(Number);
+      year = y;
+      month = m - 1;
+      day = d;
+    } else {
+      const cleanStr = dateStr.replace(/Tháng\s*/i, '').replace(',', '');
+      const parts = cleanStr.split(/\s+/);
+      if (parts.length >= 3) {
+        day = parseInt(parts[0], 10);
+        month = parseInt(parts[1], 10) - 1;
+        year = parseInt(parts[2], 10);
+      } else {
+        return false;
+      }
+    }
+
+    let hours = 0;
+    let minutes = 0;
+
+    if (timeStr && /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]/.test(timeStr)) {
+      const [h, m] = timeStr.split(':').map(Number);
+      hours = h;
+      minutes = m;
+    }
+
+    const eventStartDateTime = new Date(year, month, day, hours, minutes, 0);
+    // Ngưng bán trước giờ bắt đầu 1 tiếng
+    const salesCloseDateTime = new Date(eventStartDateTime.getTime() - 60 * 60 * 1000);
+    return now > salesCloseDateTime;
+  } catch (e) {
+    console.error('Error in isEventExpired (sales close validation):', e);
+  }
+  return false;
+};
 import { useScrollReveal } from './hooks/useScrollReveal';
 import Header from './components/Header';
 import Hero from './components/Hero';
@@ -114,7 +157,8 @@ function App() {
       const res = await fetch('http://localhost:5000/api/events');
       if (res.ok) {
         const data = await res.json();
-        setEvents(data);
+        const activeEvents = data.filter(event => !isEventExpired(event.date, event.time));
+        setEvents(activeEvents);
       }
     } catch (e) {
       console.error(e);

@@ -361,7 +361,9 @@ export default function Checkout({ bookingData, onBack, onComplete, showAlert, c
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', paddingBottom: '16px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
               <span style={{ fontWeight: 700, color: 'var(--text-white)', fontFamily: 'var(--font-display)', fontSize: '15px' }}>{event.title}</span>
               <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{event.date} · {event.time}</span>
-              <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{event.location.split(',')[0]}</span>
+              <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
+                {event.eventType === 'online' ? 'Mua vé để xem địa chỉ' : event.location.split(',')[0]}
+              </span>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -639,9 +641,11 @@ export default function Checkout({ bookingData, onBack, onComplete, showAlert, c
                       </div>
                     </div>
                     <div>
-                      <span style={{ fontSize: '10.5px', color: 'var(--text-muted)', textTransform: 'uppercase', fontFamily: 'var(--font-mono)', letterSpacing: '0.05em' }}>Địa Điểm</span>
-                      <div style={{ fontSize: '13.5px', fontWeight: 600, color: 'var(--brand-pearl)', marginTop: '4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '170px', lineHeight: '1.4' }} title={event.location}>
-                        {event.location.split(',')[0]}
+                      <span style={{ fontSize: '10.5px', color: 'var(--text-muted)', textTransform: 'uppercase', fontFamily: 'var(--font-mono)', letterSpacing: '0.05em' }}>
+                        {event.eventType === 'online' ? 'Địa chỉ web' : 'Địa Điểm'}
+                      </span>
+                      <div style={{ fontSize: '13.5px', fontWeight: 600, color: 'var(--brand-pearl)', marginTop: '4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '170px', lineHeight: '1.4' }} title={event.eventType === 'online' ? 'Mua vé để xem địa chỉ' : event.location}>
+                        {event.eventType === 'online' ? 'Mua vé để xem địa chỉ' : event.location.split(',')[0]}
                       </div>
                     </div>
                   </div>

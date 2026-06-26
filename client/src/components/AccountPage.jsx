@@ -115,13 +115,50 @@ export default function AccountPage({
   const now = new Date();
   // Helpers để xác định trạng thái vé dựa trên eventDate từ backend
   const getTicketStatus = (ticket) => {
-    const isUsed = ticket.status === 'used' || ticket.used === true; // nếu backend sau này thêm
-    // eventDate là string 'YYYY-MM-DD' từ event.date
-    const eventDate = ticket.eventDate ? new Date(ticket.eventDate) : null;
-    // Coi vé hết hạn nếu ngày sự kiện < hôm nay (đã qua)
-    const isExpired = eventDate ? eventDate < now : false;
+    const isUsed = ticket.status === 'used' || ticket.used === true;
+    
+    let isExpired = false;
+    let isSalesClosed = false;
+    if (ticket.eventDate) {
+      try {
+        let year, month, day;
+        if (/^\d{4}-\d{2}-\d{2}/.test(ticket.eventDate)) {
+          const [y, m, d] = ticket.eventDate.split('T')[0].split('-').map(Number);
+          year = y;
+          month = m - 1;
+          day = d;
+        } else {
+          const cleanStr = ticket.eventDate.replace(/Tháng\s*/i, '').replace(',', '');
+          const parts = cleanStr.split(/\s+/);
+          if (parts.length >= 3) {
+            day = parseInt(parts[0], 10);
+            month = parseInt(parts[1], 10) - 1;
+            year = parseInt(parts[2], 10);
+          }
+        }
+
+        if (year !== undefined) {
+          let hours = 0;
+          let minutes = 0;
+          if (ticket.eventTime && /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]/.test(ticket.eventTime)) {
+            const [h, m] = ticket.eventTime.split(':').map(Number);
+            hours = h;
+            minutes = m;
+          }
+          const eventStart = new Date(year, month, day, hours, minutes, 0);
+          const now = new Date();
+          isExpired = eventStart <= now;
+          
+          const salesCloseDateTime = new Date(eventStart.getTime() - 60 * 60 * 1000);
+          isSalesClosed = now > salesCloseDateTime;
+        }
+      } catch (e) {
+        console.error("Lỗi khi kiểm tra hết hạn vé:", e);
+      }
+    }
+
     const isReselling = ticket.status === 'reselling';
-    return { isUsed, isExpired, isReselling };
+    return { isUsed, isExpired, isSalesClosed, isReselling };
   };
 
   const getFilteredTickets = () => {
@@ -696,17 +733,28 @@ export default function AccountPage({
                         ) : (
                           <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
                             {!isReselling ? (
-                              <button
-                                style={{
-                                  flex: 1, padding: '8px', borderRadius: '6px',
-                                  border: '1px solid var(--brand-gold)', background: 'transparent',
-                                  color: 'var(--brand-gold)', fontSize: '12px', fontFamily: 'var(--font-mono)',
-                                  cursor: 'pointer', letterSpacing: '0.05em', transition: 'background 0.2s'
-                                }}
-                                onClick={() => { setResalePending(ticket); setResalePrice(String(Math.round(ticket.price * 0.85))); }}
-                              >
-                                BÁN LẠI
-                              </button>
+                              isSalesClosed ? (
+                                <div style={{
+                                  width: '100%', padding: '8px', borderRadius: '6px', textAlign: 'center',
+                                  border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.03)',
+                                  color: 'var(--text-muted)', fontSize: '11px', fontFamily: 'var(--font-mono)',
+                                  letterSpacing: '0.05em'
+                                }}>
+                                  ✗ Đã đóng giao dịch
+                                </div>
+                              ) : (
+                                <button
+                                  style={{
+                                    flex: 1, padding: '8px', borderRadius: '6px',
+                                    border: '1px solid var(--brand-gold)', background: 'transparent',
+                                    color: 'var(--brand-gold)', fontSize: '12px', fontFamily: 'var(--font-mono)',
+                                    cursor: 'pointer', letterSpacing: '0.05em', transition: 'background 0.2s'
+                                  }}
+                                  onClick={() => { setResalePending(ticket); setResalePrice(String(Math.round(ticket.price * 0.85))); }}
+                                >
+                                  BÁN LẠI
+                                </button>
+                              )
                             ) : (
                               <button
                                 style={{
@@ -721,6 +769,7 @@ export default function AccountPage({
                             )}
                           </div>
                         )}
+
                       </div>
                     )}
                   </div>

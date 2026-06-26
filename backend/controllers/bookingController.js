@@ -1,5 +1,7 @@
 import { Op } from 'sequelize';
 import { Booking, Ticket, Zone, Event, sequelize } from '../models/index.js';
+import { isSalesClosed } from '../utils/dateHelper.js';
+import { cleanupExpiredResales } from '../utils/resaleCleanup.js';
 
 export const createBooking = async (req, res) => {
   const {
@@ -13,6 +15,10 @@ export const createBooking = async (req, res) => {
   try {
     const event = await Event.findByPk(eventId, { transaction: t });
     if (!event) throw new Error('Không tìm thấy sự kiện');
+
+    if (isSalesClosed(event.date, event.time)) {
+      throw new Error('Sự kiện đã ngưng bán vé sơ cấp');
+    }
 
     // Availability check — multi-zone (workshop) or single-zone
     if (perSeatZoneIds && perSeatZoneIds.length > 0) {
@@ -89,6 +95,9 @@ export const getWalletTickets = async (req, res) => {
   const { userId } = req.query;
   if (!userId) return res.status(400).json({ error: 'Thiếu userId' });
   try {
+    // 1. Tự động dọn dẹp các vé resale quá hạn trước
+    await cleanupExpiredResales();
+
     const tickets = await Ticket.findAll({
       where: { userId, status: ['active', 'reselling'] },
       include: [

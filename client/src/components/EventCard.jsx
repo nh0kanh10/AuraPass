@@ -338,7 +338,7 @@ export default function EventCard({ event, isFeatured, onClick }) {
                 NGÀY • <strong>{getShortDate(event.date)}</strong>
               </span>
               <span className="banner-ticket-pill">
-                ĐỊA ĐIỂM • <strong>{getShortVenue(event.location)}</strong>
+                {event.eventType === 'online' ? 'ĐỊA CHỈ WEB' : 'ĐỊA ĐIỂM'} • <strong>{event.eventType === 'online' ? 'TRỰC TUYẾN' : getShortVenue(event.location)}</strong>
               </span>
               <span className="banner-ticket-pill" style={{ borderColor: config.border, background: 'rgba(255,255,255,0.01)' }}>
                 GIÁ VÉ • <strong style={{ color: config.text }}>{formatPriceNum(event.priceRange)}</strong>
@@ -616,9 +616,9 @@ export default function EventCard({ event, isFeatured, onClick }) {
             <span className="normal-info-value">{getShortDate(event.date)}</span>
           </div>
           <div className="normal-info-row">
-            <span className="normal-info-label">ĐỊA ĐIỂM</span>
+            <span className="normal-info-label">{event.eventType === 'online' ? 'ĐỊA CHỈ WEB' : 'ĐỊA ĐIỂM'}</span>
             <span className="normal-info-value" style={{ maxWidth: '160px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {getShortVenue(event.location)}
+              {event.eventType === 'online' ? 'TRỰC TUYẾN' : getShortVenue(event.location)}
             </span>
           </div>
           <div className="normal-info-row" style={{ borderBottom: 'none', paddingBottom: 0 }}>

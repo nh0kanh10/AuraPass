@@ -235,9 +235,28 @@ export default function SeatMap({ event, onBack, onProceedCheckout, showAlert })
               }}>💻 SỰ KIỆN TRỰC TUYẾN</span>
             </div>
           )}
-          <div style={{ padding: '16px 20px 20px' }}>
-            <div style={{ fontSize: '17px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '4px' }}>{event.title}</div>
-            <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{event.date} {event.time && `· ${event.time}`}</div>
+          <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <div style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)' }}>{event.title}</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '13px', color: 'var(--text-secondary)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Calendar size={14} style={{ color: 'var(--brand-cyan)', flexShrink: 0 }} />
+                <span style={{ fontWeight: 600, color: 'var(--text-muted)', marginRight: '4px' }}>Ngày diễn ra:</span>
+                <span>{event.date}</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Clock size={14} style={{ color: 'var(--brand-cyan)', flexShrink: 0 }} />
+                <span style={{ fontWeight: 600, color: 'var(--text-muted)', marginRight: '4px' }}>Thời gian:</span>
+                <span>
+                  {event.time || ''}{event.endTime ? ` - ${event.endTime}` : ''}
+                  {event.time && event.endTime && ` (${calculateDuration(event.time, event.endTime)})`}
+                </span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <MapPin size={14} style={{ color: 'var(--brand-cyan)', flexShrink: 0 }} />
+                <span style={{ fontWeight: 600, color: 'var(--text-muted)', marginRight: '4px' }}>Địa chỉ web:</span>
+                <span>Mua vé để xem địa chỉ</span>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -449,7 +468,28 @@ export default function SeatMap({ event, onBack, onProceedCheckout, showAlert })
             <div>
               <span style={{ fontFamily: 'var(--font-mono)', fontSize: '9.5px', letterSpacing: '0.12em', color: 'var(--brand-cyan)', textTransform: 'uppercase', fontWeight: 600 }}>Workshop Floor Plan</span>
               <h2 style={{ fontSize: '26px', fontFamily: 'var(--font-display)', fontWeight: 700, margin: '8px 0 6px 0', color: 'var(--text-primary)' }}>Chọn Bàn & Ghế Ngồi</h2>
-              <p style={{ fontSize: '14px', color: 'var(--text-muted)', margin: 0 }}>{event.title}</p>
+              <p style={{ fontSize: '15px', fontWeight: 600, color: 'var(--brand-cyan)', margin: '0 0 14px 0' }}>{event.title}</p>
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '13px', color: 'var(--text-secondary)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Calendar size={14} style={{ color: 'var(--brand-cyan)', flexShrink: 0 }} />
+                  <span style={{ fontWeight: 600, color: 'var(--text-muted)', marginRight: '4px' }}>Ngày diễn ra:</span>
+                  <span>{event.date}</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Clock size={14} style={{ color: 'var(--brand-cyan)', flexShrink: 0 }} />
+                  <span style={{ fontWeight: 600, color: 'var(--text-muted)', marginRight: '4px' }}>Thời gian:</span>
+                  <span>
+                    {event.time || ''}{event.endTime ? ` - ${event.endTime}` : ''}
+                    {event.time && event.endTime && ` (${calculateDuration(event.time, event.endTime)})`}
+                  </span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <MapPin size={14} style={{ color: 'var(--brand-cyan)', flexShrink: 0 }} />
+                  <span style={{ fontWeight: 600, color: 'var(--text-muted)', marginRight: '4px' }}>Địa điểm:</span>
+                  <span>{event.location}</span>
+                </div>
+              </div>
             </div>
 
             {/* Legend */}
@@ -528,6 +568,8 @@ export default function SeatMap({ event, onBack, onProceedCheckout, showAlert })
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', paddingBottom: '12px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
               {[
                 { label: 'Sự kiện:', value: event.title },
+                { label: 'Thời gian:', value: `${event.time || ''}${event.endTime ? ` - ${event.endTime}` : ''}${event.date ? `, ${event.date}` : ''}` },
+                { label: 'Địa điểm:', value: event.location || '—' },
                 { label: 'Bàn:', value: wsSelectedZoneNames.length > 0 ? wsSelectedZoneNames.join(', ') : '—' },
                 { label: 'Đơn giá / ghế:', value: formatPrice(selectedZone?.price || 0), cyan: true },
                 { label: 'Phí dịch vụ & VAT:', value: '0đ (Đã bao gồm)' },
@@ -1281,7 +1323,7 @@ export default function SeatMap({ event, onBack, onProceedCheckout, showAlert })
               </div>
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
                 <MapPin size={14} color="var(--brand-cyan)" style={{ marginTop: '2px', flexShrink: 0 }} />
-                <span><strong>Địa điểm/Địa chỉ:</strong> {event.location}</span>
+                <span><strong>Địa điểm:</strong> {event.location}</span>
               </div>
             </div>
           </div>

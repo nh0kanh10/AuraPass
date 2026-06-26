@@ -656,7 +656,7 @@ export default function Hero({ events, onBookClick }) {
                           </div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'inherit' }}>
                             <MapPin size={14} />
-                            <span style={{ fontWeight: 500 }}>{event.location.split(',')[0]}</span>
+                            <span style={{ fontWeight: 500 }}>{event.eventType === 'online' ? 'Trực tuyến' : event.location.split(',')[0]}</span>
                           </div>
                         </div>
 
