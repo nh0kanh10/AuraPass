@@ -99,7 +99,7 @@ export default function SeatMap({ event, onBack, onProceedCheckout, showAlert, u
   const normalizedZones = normalizeSeatZones(event.zones || []);
   const [selectedZone, setSelectedZone] = useState(normalizedZones[0]);
   const [selectedSeats, setSelectedSeats] = useState([]);
-  const [standingCount, setStandingCount] = useState(0);
+  const [standingCount, setStandingCount] = useState(event.eventType === 'online' ? 1 : 0);
   const [takenSeats, setTakenSeats] = useState([]);
   const [loadingTakenSeats, setLoadingTakenSeats] = useState(false);
   const [allZoneTakenSeats, setAllZoneTakenSeats] = useState({});
@@ -109,7 +109,7 @@ export default function SeatMap({ event, onBack, onProceedCheckout, showAlert, u
   useEffect(() => {
     if (event.eventType === 'workshop') return;
     setSelectedSeats([]);
-    setStandingCount(0);
+    setStandingCount(event.eventType === 'online' ? 1 : 0);
   }, [selectedZone]);
 
   useEffect(() => {
@@ -357,19 +357,15 @@ export default function SeatMap({ event, onBack, onProceedCheckout, showAlert, u
               💡 BẠN ĐÃ SỞ HỮU VÉ SỰ KIỆN NÀY. MỖI NGƯỜI CHỈ ĐƯỢC MUA TỐI ĐA 1 VÉ.
             </div>
           ) : (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '20px' }}>
-              <button
-                onClick={handleStandingDecrement}
-                disabled={standingCount === 0}
-                style={{ width: '36px', height: '36px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.04)', color: 'var(--text-primary)', fontSize: '18px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }}
-              >−</button>
-              <span style={{ fontSize: '24px', fontWeight: 700, fontFamily: 'var(--font-mono)', color: 'var(--text-primary)', minWidth: '32px', textAlign: 'center' }}>{onlineCount}</span>
-              <button
-                onClick={handleStandingIncrement}
-                disabled={onlineCount >= 1 || onlineCount >= (selectedZone?.availableTickets || 0)}
-                style={{ width: '36px', height: '36px', borderRadius: '8px', border: '1px solid var(--brand-cyan)', background: 'rgba(0,255,255,0.08)', color: 'var(--brand-cyan)', fontSize: '18px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }}
-              >+</button>
-              <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>vé (tối đa 1)</span>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '20px' }}>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+                <span style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>Số lượng vé đặt mua:</span>
+                <span style={{ fontSize: '20px', fontWeight: 700, fontFamily: 'var(--font-mono)', color: 'var(--brand-cyan)' }}>1</span>
+                <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>vé (tối đa)</span>
+              </div>
+              <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                * Hệ thống giới hạn mỗi tài khoản chỉ được phép sở hữu tối đa 1 vé trực tuyến.
+              </div>
             </div>
           )}
 
